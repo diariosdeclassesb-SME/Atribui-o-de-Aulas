@@ -258,11 +258,6 @@ async function requireLogin() {
   return session;
 }
 
-// Lê o admin direto do JWT (app_metadata.is_admin) — sem consultar o banco
-function isAdminSync(session) {
-  return session?.user?.app_metadata?.is_admin === true;
-}
-
 async function logout() {
   await supabaseClient.auth.signOut();
   window.location.href = 'index.html';
@@ -448,11 +443,6 @@ async function delProfessor(id) {
 (async () => {
   const session = await requireLogin();
   if (!session) return;
-  if (!isAdminSync(session)) {
-    alert('Você não tem permissão de administrador.');
-    await logout();
-    return;
-  }
   $('logout').onclick = (e) => { e.preventDefault(); logout(); };
   carregarTudo();
 })();
