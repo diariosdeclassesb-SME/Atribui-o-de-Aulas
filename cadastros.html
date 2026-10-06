@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cadastros — Sistema de Turmas</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-dark: #1e40af;
+    --danger: #dc2626;
+    --bg: #f3f4f6;
+    --card: #ffffff;
+    --border: #e5e7eb;
+    --text: #111827;
+    --muted: #6b7280;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    margin: 0; background: var(--bg); color: var(--text);
+  }
+  header {
+    background: var(--card); border-bottom: 1px solid var(--border);
+    padding: 12px 24px; display: flex; justify-content: space-between;
+    align-items: center; position: sticky; top: 0; z-index: 10;
+  }
+  header h1 { font-size: 18px; margin: 0; }
+  header nav a {
+    color: var(--text); text-decoration: none; margin-right: 16px;
+    font-size: 14px;
+  }
+  header nav a.active { color: var(--primary); font-weight: 600; }
+  .container { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+  .tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; }
+  .tabs button {
+    background: none; border: none; padding: 10px 16px; cursor: pointer;
+    font-size: 14px; color: var(--muted); border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+  }
+  .tabs button.active {
+    color: var(--primary); border-bottom-color: var(--primary); font-weight: 600;
+  }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px; margin-bottom: 16px;
+  }
+  .form-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px; align-items: end;
+  }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  input, select {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 14px; background: white;
+  }
+  button.btn {
+    padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;
+    font-size: 14px; font-weight: 500;
+  }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-danger { background: var(--danger); color: white; padding: 4px 10px; font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  th { background: #f9fafb; font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; }
+  tr:last-child td { border-bottom: none; }
+  .empty { color: var(--muted); font-size: 14px; padding: 20px; text-align: center; }
+  .toast {
+    position: fixed; bottom: 20px; right: 20px; background: #111827; color: white;
+    padding: 12px 20px; border-radius: 6px; font-size: 14px; opacity: 0;
+    transition: opacity .3s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+  .toast.error { background: var(--danger); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Sistema de Turmas</h1>
+  <nav>
+    <a href="cadastros.html" class="active">Cadastros</a>
+    <a href="atribuicoes.html">Atribuições</a>
+    <a href="professor.html">Painel do Professor</a>
+    <a href="#" id="logout">Sair</a>
+  </nav>
+</header>
+
+<div class="container">
+  <div class="tabs">
+    <button data-tab="escolas" class="active">Escolas</button>
+    <button data-tab="disciplinas">Disciplinas</button>
+    <button data-tab="turmas">Turmas</button>
+    <button data-tab="ofertas">Ofertas (Turma × Disciplina)</button>
+    <button data-tab="professores">Professores</button>
+  </div>
+
+  <!-- ESCOLAS -->
+  <section class="panel active" id="panel-escolas">
+    <div class="card">
+      <div class="form-row">
+        <div>
+          <label>Nome da escola</label>
+          <input id="escola-nome" placeholder="Ex: Escola Municipal A" />
+        </div>
+        <button class="btn btn-primary" onclick="addEscola()">Adicionar</button>
+      </div>
+    </div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Nome</th><th style="width:80px">Ações</th></tr></thead>
+        <tbody id="lista-escolas"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- DISCIPLINAS -->
+  <section class="panel" id="panel-disciplinas">
+    <div class="card">
+      <div class="form-row">
+        <div>
+          <label>Nome da disciplina</label>
+          <input id="disciplina-nome" placeholder="Ex: Matemática" />
+        </div>
+        <button class="btn btn-primary" onclick="addDisciplina()">Adicionar</button>
+      </div>
+    </div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Nome</th><th style="width:80px">Ações</th></tr></thead>
+        <tbody id="lista-disciplinas"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- TURMAS -->
+  <section class="panel" id="panel-turmas">
+    <div class="card">
+      <div class="form-row">
+        <div>
+          <label>Escola</label>
+          <select id="turma-escola"></select>
+        </div>
+        <div>
+          <label>Nome da turma</label>
+          <input id="turma-nome" placeholder="Ex: 6º Ano A" />
+        </div>
+        <div>
+          <label>Período</label>
+          <select id="turma-periodo">
+            <option>Manhã</option>
+            <option>Tarde</option>
+            <option>Noite</option>
+            <option>Integral</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="addTurma()">Adicionar</button>
+      </div>
+    </div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Escola</th><th>Turma</th><th>Período</th><th style="width:80px">Ações</th></tr></thead>
+        <tbody id="lista-turmas"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- OFERTAS -->
+  <section class="panel" id="panel-ofertas">
+    <div class="card">
+      <div class="form-row">
+        <div>
+          <label>Turma</label>
+          <select id="oferta-turma"></select>
+        </div>
+        <div>
+          <label>Disciplina</label>
+          <select id="oferta-disciplina"></select>
+        </div>
+        <div>
+          <label>Aulas semanais</label>
+          <input id="oferta-aulas" type="number" min="1" value="1" />
+        </div>
+        <button class="btn btn-primary" onclick="addOferta()">Adicionar</button>
+      </div>
+    </div>
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>Escola</th><th>Turma</th><th>Disciplina</th><th>Aulas</th><th style="width:80px">Ações</th></tr>
+        </thead>
+        <tbody id="lista-ofertas"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- PROFESSORES -->
+  <section class="panel" id="panel-professores">
+    <div class="card">
+      <div class="form-row">
+        <div>
+          <label>Nome completo</label>
+          <input id="prof-nome" placeholder="Ex: João da Silva" />
+        </div>
+        <div>
+          <label>E-mail (opcional)</label>
+          <input id="prof-email" type="email" />
+        </div>
+        <div>
+          <label>Disciplina</label>
+          <select id="prof-disciplina"></select>
+        </div>
+        <button class="btn btn-primary" onclick="addProfessor()">Adicionar</button>
+      </div>
+    </div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Nome</th><th>E-mail</th><th>Disciplina</th><th style="width:80px">Ações</th></tr></thead>
+        <tbody id="lista-professores"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------- configuração Supabase ----------
+const SUPABASE_URL = 'https://ndvgduxdebeiyujfrups.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kdmdkdXhkZWJlaXl1amZydXBzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4NzM4MzgsImV4cCI6MjA5MzQ0OTgzOH0.G7fWT-Ys6RLif0ce8zuHbjqbDUm6jOd8oxa9dSjPtg8';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ---------- utilidades ----------
+const $ = (id) => document.getElementById(id);
+function toast(msg, erro = false) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (erro ? ' error' : '');
+  setTimeout(() => t.className = 'toast', 2500);
+}
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+// ---------- autenticação ----------
+async function requireLogin() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) {
+    window.location.href = 'index.html';
+    return null;
+  }
+  return session;
+}
+async function isAdmin() {
+  const { data, error } = await supabaseClient
+    .from('admins')
+    .select('user_id')
+    .limit(1);
+  return !error && data && data.length > 0;
+}
+async function logout() {
+  await supabaseClient.auth.signOut();
+  window.location.href = 'index.html';
+}
+
+// ---------- navegação por abas ----------
+document.querySelectorAll('.tabs button').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    $('panel-' + btn.dataset.tab).classList.add('active');
+  };
+});
+
+// ---------- cache de dados ----------
+let escolas = [], disciplinas = [], turmas = [], ofertas = [], professores = [];
+
+// ---------- carregamento ----------
+async function carregarTudo() {
+  const [e, d, t, o, p] = await Promise.all([
+    supabaseClient.from('schools').select('*').order('name'),
+    supabaseClient.from('disciplines').select('*').order('name'),
+    supabaseClient.from('classes').select('*, schools(name)').order('name'),
+    supabaseClient.from('class_disciplines').select('*, classes(name, period, schools(name)), disciplines(name)'),
+    supabaseClient.from('teachers').select('*, disciplines(name)').order('full_name'),
+  ]);
+  if (e.error) return toast('Erro escolas: ' + e.error.message, true);
+  if (d.error) return toast('Erro disciplinas: ' + d.error.message, true);
+  if (t.error) return toast('Erro turmas: ' + t.error.message, true);
+  if (o.error) return toast('Erro ofertas: ' + o.error.message, true);
+  if (p.error) return toast('Erro professores: ' + p.error.message, true);
+
+  escolas = e.data || [];
+  disciplinas = d.data || [];
+  turmas = t.data || [];
+  ofertas = o.data || [];
+  professores = p.data || [];
+  renderEscolas(); renderDisciplinas(); renderTurmas();
+  renderOfertas(); renderProfessores(); preencherSelects();
+}
+
+function preencherSelects() {
+  $('turma-escola').innerHTML = escolas.map(e =>
+    `<option value="${e.id}">${esc(e.name)}</option>`).join('');
+
+  $('oferta-turma').innerHTML = turmas.map(t =>
+    `<option value="${t.id}">${esc(t.schools?.name)} — ${esc(t.name)} (${esc(t.period)})</option>`).join('');
+
+  const optDisc = disciplinas.map(d =>
+    `<option value="${d.id}">${esc(d.name)}</option>`).join('');
+  $('oferta-disciplina').innerHTML = optDisc;
+  $('prof-disciplina').innerHTML = optDisc;
+}
+
+// ---------- renders ----------
+function renderEscolas() {
+  $('lista-escolas').innerHTML = escolas.length
+    ? escolas.map(e => `<tr><td>${esc(e.name)}</td>
+        <td><button class="btn btn-danger" onclick="delEscola('${e.id}')">Excluir</button></td></tr>`).join('')
+    : '<tr><td colspan="2" class="empty">Nenhuma escola cadastrada.</td></tr>';
+}
+function renderDisciplinas() {
+  $('lista-disciplinas').innerHTML = disciplinas.length
+    ? disciplinas.map(d => `<tr><td>${esc(d.name)}</td>
+        <td><button class="btn btn-danger" onclick="delDisciplina('${d.id}')">Excluir</button></td></tr>`).join('')
+    : '<tr><td colspan="2" class="empty">Nenhuma disciplina cadastrada.</td></tr>';
+}
+function renderTurmas() {
+  $('lista-turmas').innerHTML = turmas.length
+    ? turmas.map(t => `<tr>
+        <td>${esc(t.schools?.name)}</td>
+        <td>${esc(t.name)}</td>
+        <td>${esc(t.period)}</td>
+        <td><button class="btn btn-danger" onclick="delTurma('${t.id}')">Excluir</button></td>
+      </tr>`).join('')
+    : '<tr><td colspan="4" class="empty">Nenhuma turma cadastrada.</td></tr>';
+}
+function renderOfertas() {
+  $('lista-ofertas').innerHTML = ofertas.length
+    ? ofertas.map(o => `<tr>
+        <td>${esc(o.classes?.schools?.name)}</td>
+        <td>${esc(o.classes?.name)} (${esc(o.classes?.period)})</td>
+        <td>${esc(o.disciplines?.name)}</td>
+        <td>${o.lesson_count}</td>
+        <td><button class="btn btn-danger" onclick="delOferta('${o.id}')">Excluir</button></td>
+      </tr>`).join('')
+    : '<tr><td colspan="5" class="empty">Nenhuma oferta cadastrada.</td></tr>';
+}
+function renderProfessores() {
+  $('lista-professores').innerHTML = professores.length
+    ? professores.map(p => `<tr>
+        <td>${esc(p.full_name)}</td>
+        <td>${esc(p.email || '—')}</td>
+        <td>${esc(p.disciplines?.name || '—')}</td>
+        <td><button class="btn btn-danger" onclick="delProfessor('${p.id}')">Excluir</button></td>
+      </tr>`).join('')
+    : '<tr><td colspan="4" class="empty">Nenhum professor cadastrado.</td></tr>';
+}
+
+// ---------- operações ----------
+async function addEscola() {
+  const name = $('escola-nome').value.trim();
+  if (!name) return toast('Digite o nome da escola', true);
+  const { error } = await supabaseClient.from('schools').insert({ name });
+  if (error) return toast(error.message, true);
+  $('escola-nome').value = '';
+  toast('Escola adicionada'); carregarTudo();
+}
+async function delEscola(id) {
+  if (!confirm('Excluir esta escola? Todas as turmas dela também serão removidas.')) return;
+  const { error } = await supabaseClient.from('schools').delete().eq('id', id);
+  if (error) return toast(error.message, true);
+  toast('Escola removida'); carregarTudo();
+}
+
+async function addDisciplina() {
+  const name = $('disciplina-nome').value.trim();
+  if (!name) return toast('Digite o nome da disciplina', true);
+  const { error } = await supabaseClient.from('disciplines').insert({ name });
+  if (error) return toast(error.message, true);
+  $('disciplina-nome').value = '';
+  toast('Disciplina adicionada'); carregarTudo();
+}
+async function delDisciplina(id) {
+  if (!confirm('Excluir esta disciplina?')) return;
+  const { error } = await supabaseClient.from('disciplines').delete().eq('id', id);
+  if (error) return toast(error.message, true);
+  toast('Disciplina removida'); carregarTudo();
+}
+
+async function addTurma() {
+  const school_id = $('turma-escola').value;
+  const name = $('turma-nome').value.trim();
+  const period = $('turma-periodo').value;
+  if (!school_id || !name) return toast('Preencha escola e nome', true);
+  const { error } = await supabaseClient.from('classes').insert({ school_id, name, period });
+  if (error) return toast(error.message, true);
+  $('turma-nome').value = '';
+  toast('Turma adicionada'); carregarTudo();
+}
+async function delTurma(id) {
+  if (!confirm('Excluir esta turma?')) return;
+  const { error } = await supabaseClient.from('classes').delete().eq('id', id);
+  if (error) return toast(error.message, true);
+  toast('Turma removida'); carregarTudo();
+}
+
+async function addOferta() {
+  const class_id = $('oferta-turma').value;
+  const discipline_id = $('oferta-disciplina').value;
+  const lesson_count = parseInt($('oferta-aulas').value, 10);
+  if (!class_id || !discipline_id || !lesson_count) return toast('Preencha todos os campos', true);
+  const { error } = await supabaseClient.from('class_disciplines').insert({ class_id, discipline_id, lesson_count });
+  if (error) return toast(error.message, true);
+  toast('Oferta adicionada'); carregarTudo();
+}
+async function delOferta(id) {
+  if (!confirm('Excluir esta oferta?')) return;
+  const { error } = await supabaseClient.from('class_disciplines').delete().eq('id', id);
+  if (error) return toast(error.message, true);
+  toast('Oferta removida'); carregarTudo();
+}
+
+async function addProfessor() {
+  const full_name = $('prof-nome').value.trim();
+  const email = $('prof-email').value.trim() || null;
+  const discipline_id = $('prof-disciplina').value || null;
+  if (!full_name) return toast('Digite o nome do professor', true);
+  const { error } = await supabaseClient.from('teachers').insert({ full_name, email, discipline_id });
+  if (error) return toast(error.message, true);
+  $('prof-nome').value = ''; $('prof-email').value = '';
+  toast('Professor adicionado'); carregarTudo();
+}
+async function delProfessor(id) {
+  if (!confirm('Excluir este professor? As atribuições dele serão removidas.')) return;
+  const { error } = await supabaseClient.from('teachers').delete().eq('id', id);
+  if (error) return toast(error.message, true);
+  toast('Professor removido'); carregarTudo();
+}
+
+// ---------- inicialização ----------
+(async () => {
+  const session = await requireLogin();
+  if (!session) return;
+  if (!(await isAdmin())) {
+    alert('Você não tem permissão de administrador.');
+    await logout();
+    return;
+  }
+  $('logout').onclick = (e) => { e.preventDefault(); logout(); };
+  carregarTudo();
+})();
+</script>
+</body>
+</html>
