@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Cadastros — Sistema de Turmas</title>
+<title>Cadastros — Sistema de Atribuição de Aulas</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
@@ -81,7 +81,7 @@
 <body>
 
 <header>
-  <h1>Sistema de Turmas</h1>
+  <h1>Sistema de Atribuição de Aulas</h1>
   <nav>
     <a href="cadastros.html" class="active">Cadastros</a>
     <a href="atribuicoes.html">Atribuições</a>
@@ -229,12 +229,12 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ---------- configuração Supabase ----------
+// ---------- Configuração Supabase ----------
 const SUPABASE_URL = 'https://ndvgduxdebeiyujfrups.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kdmdkdXhkZWJlaXl1amZydXBzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4NzM4MzgsImV4cCI6MjA5MzQ0OTgzOH0.G7fWT-Ys6RLif0ce8zuHbjqbDUm6jOd8oxa9dSjPtg8';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ---------- utilidades ----------
+// ---------- Utilidades ----------
 const $ = (id) => document.getElementById(id);
 function toast(msg, erro = false) {
   const t = $('toast');
@@ -248,7 +248,7 @@ function esc(s) {
   }[c]));
 }
 
-// ---------- autenticação ----------
+// ---------- Autenticação ----------
 async function requireLogin() {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (!session) {
@@ -257,19 +257,18 @@ async function requireLogin() {
   }
   return session;
 }
-async function isAdmin() {
-  const { data, error } = await supabaseClient
-    .from('admins')
-    .select('user_id')
-    .limit(1);
-  return !error && data && data.length > 0;
+
+// Lê o admin direto do JWT (app_metadata.is_admin) — sem consultar o banco
+function isAdminSync(session) {
+  return session?.user?.app_metadata?.is_admin === true;
 }
+
 async function logout() {
   await supabaseClient.auth.signOut();
   window.location.href = 'index.html';
 }
 
-// ---------- navegação por abas ----------
+// ---------- Navegação por abas ----------
 document.querySelectorAll('.tabs button').forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
@@ -279,10 +278,10 @@ document.querySelectorAll('.tabs button').forEach(btn => {
   };
 });
 
-// ---------- cache de dados ----------
+// ---------- Cache de dados ----------
 let escolas = [], disciplinas = [], turmas = [], ofertas = [], professores = [];
 
-// ---------- carregamento ----------
+// ---------- Carregamento ----------
 async function carregarTudo() {
   const [e, d, t, o, p] = await Promise.all([
     supabaseClient.from('schools').select('*').order('name'),
@@ -319,7 +318,7 @@ function preencherSelects() {
   $('prof-disciplina').innerHTML = optDisc;
 }
 
-// ---------- renders ----------
+// ---------- Renders ----------
 function renderEscolas() {
   $('lista-escolas').innerHTML = escolas.length
     ? escolas.map(e => `<tr><td>${esc(e.name)}</td>
@@ -364,7 +363,7 @@ function renderProfessores() {
     : '<tr><td colspan="4" class="empty">Nenhum professor cadastrado.</td></tr>';
 }
 
-// ---------- operações ----------
+// ---------- Operações ----------
 async function addEscola() {
   const name = $('escola-nome').value.trim();
   if (!name) return toast('Digite o nome da escola', true);
@@ -445,11 +444,11 @@ async function delProfessor(id) {
   toast('Professor removido'); carregarTudo();
 }
 
-// ---------- inicialização ----------
+// ---------- Inicialização ----------
 (async () => {
   const session = await requireLogin();
   if (!session) return;
-  if (!(await isAdmin())) {
+  if (!isAdminSync(session)) {
     alert('Você não tem permissão de administrador.');
     await logout();
     return;
