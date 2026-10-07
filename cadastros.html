@@ -7,75 +7,40 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
-    --primary: #2563eb;
-    --primary-dark: #1e40af;
-    --danger: #dc2626;
-    --bg: #f3f4f6;
-    --card: #ffffff;
-    --border: #e5e7eb;
-    --text: #111827;
-    --muted: #6b7280;
+    --primary: #2563eb; --primary-dark: #1e40af; --danger: #dc2626;
+    --bg: #f3f4f6; --card: #ffffff; --border: #e5e7eb; --text: #111827; --muted: #6b7280;
   }
   * { box-sizing: border-box; }
-  body {
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-    margin: 0; background: var(--bg); color: var(--text);
-  }
-  header {
-    background: var(--card); border-bottom: 1px solid var(--border);
-    padding: 12px 24px; display: flex; justify-content: space-between;
-    align-items: center; position: sticky; top: 0; z-index: 10;
-  }
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: var(--bg); color: var(--text); }
+  header { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
   header h1 { font-size: 18px; margin: 0; }
-  header nav a {
-    color: var(--text); text-decoration: none; margin-right: 16px;
-    font-size: 14px;
-  }
+  header nav a { color: var(--text); text-decoration: none; margin-right: 16px; font-size: 14px; }
   header nav a.active { color: var(--primary); font-weight: 600; }
   .container { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
   .tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; }
-  .tabs button {
-    background: none; border: none; padding: 10px 16px; cursor: pointer;
-    font-size: 14px; color: var(--muted); border-bottom: 2px solid transparent;
-    margin-bottom: -2px;
-  }
-  .tabs button.active {
-    color: var(--primary); border-bottom-color: var(--primary); font-weight: 600;
-  }
-  .panel { display: none; }
-  .panel.active { display: block; }
-  .card {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 8px; padding: 16px; margin-bottom: 16px;
-  }
-  .form-row {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 12px; align-items: end;
-  }
+  .tabs button { background: none; border: none; padding: 10px 16px; cursor: pointer; font-size: 14px; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -2px; }
+  .tabs button.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+  .panel { display: none; } .panel.active { display: block; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: end; }
   label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
-  input, select {
-    width: 100%; padding: 8px 10px; border: 1px solid var(--border);
-    border-radius: 6px; font-size: 14px; background: white;
-  }
-  button.btn {
-    padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;
-    font-size: 14px; font-weight: 500;
-  }
-  .btn-primary { background: var(--primary); color: white; }
-  .btn-primary:hover { background: var(--primary-dark); }
+  input, select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white; }
+  button.btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
+  .btn-primary { background: var(--primary); color: white; } .btn-primary:hover { background: var(--primary-dark); }
   .btn-danger { background: var(--danger); color: white; padding: 4px 10px; font-size: 12px; }
+  .btn-edit { background: #6b7280; color: white; padding: 4px 10px; font-size: 12px; margin-right: 4px; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
   th { background: #f9fafb; font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; }
   tr:last-child td { border-bottom: none; }
   .empty { color: var(--muted); font-size: 14px; padding: 20px; text-align: center; }
-  .toast {
-    position: fixed; bottom: 20px; right: 20px; background: #111827; color: white;
-    padding: 12px 20px; border-radius: 6px; font-size: 14px; opacity: 0;
-    transition: opacity .3s; pointer-events: none;
-  }
-  .toast.show { opacity: 1; }
-  .toast.error { background: var(--danger); }
+  .toast { position: fixed; bottom: 20px; right: 20px; background: #111827; color: white; padding: 12px 20px; border-radius: 6px; font-size: 14px; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  .toast.show { opacity: 1; } .toast.error { background: var(--danger); }
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
+  .modal-bg.show { display: flex; }
+  .modal { background: white; border-radius: 8px; padding: 20px; min-width: 420px; max-width: 90vw; }
+  .modal h3 { margin: 0 0 16px; font-size: 16px; }
+  .modal .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
 </style>
 </head>
 <body>
@@ -85,7 +50,9 @@
   <nav>
     <a href="cadastros.html" class="active">Cadastros</a>
     <a href="atribuicoes.html">Atribuições</a>
-    <a href="professor.html">Painel do Professor</a>
+    <a href="configuracoes.html">Configurações</a>
+    <a href="relatorio.html">Relatório</a>
+    <a href="professor.html">DACA</a>
     <a href="#" id="logout">Sair</a>
   </nav>
 </header>
@@ -95,146 +62,105 @@
     <button data-tab="escolas" class="active">Escolas</button>
     <button data-tab="disciplinas">Disciplinas</button>
     <button data-tab="turmas">Turmas</button>
-    <button data-tab="ofertas">Ofertas (Turma × Disciplina)</button>
+    <button data-tab="ofertas">Ofertas</button>
     <button data-tab="professores">Professores</button>
   </div>
 
-  <!-- ESCOLAS -->
   <section class="panel active" id="panel-escolas">
     <div class="card">
       <div class="form-row">
-        <div>
-          <label>Nome da escola</label>
-          <input id="escola-nome" placeholder="Ex: Escola Municipal A" />
-        </div>
+        <div><label>Nome da escola</label><input id="escola-nome" placeholder="Ex: Escola Municipal A" /></div>
         <button class="btn btn-primary" onclick="addEscola()">Adicionar</button>
       </div>
     </div>
     <div class="card">
-      <table>
-        <thead><tr><th>Nome</th><th style="width:80px">Ações</th></tr></thead>
-        <tbody id="lista-escolas"></tbody>
-      </table>
+      <table><thead><tr><th>Nome</th><th style="width:80px">Ações</th></tr></thead><tbody id="lista-escolas"></tbody></table>
     </div>
   </section>
 
-  <!-- DISCIPLINAS -->
   <section class="panel" id="panel-disciplinas">
     <div class="card">
       <div class="form-row">
-        <div>
-          <label>Nome da disciplina</label>
-          <input id="disciplina-nome" placeholder="Ex: Matemática" />
-        </div>
+        <div><label>Nome da disciplina</label><input id="disciplina-nome" placeholder="Ex: Matemática" /></div>
         <button class="btn btn-primary" onclick="addDisciplina()">Adicionar</button>
       </div>
     </div>
     <div class="card">
-      <table>
-        <thead><tr><th>Nome</th><th style="width:80px">Ações</th></tr></thead>
-        <tbody id="lista-disciplinas"></tbody>
-      </table>
+      <table><thead><tr><th>Nome</th><th style="width:80px">Ações</th></tr></thead><tbody id="lista-disciplinas"></tbody></table>
     </div>
   </section>
 
-  <!-- TURMAS -->
   <section class="panel" id="panel-turmas">
     <div class="card">
       <div class="form-row">
-        <div>
-          <label>Escola</label>
-          <select id="turma-escola"></select>
-        </div>
-        <div>
-          <label>Nome da turma</label>
-          <input id="turma-nome" placeholder="Ex: 6º Ano A" />
-        </div>
-        <div>
-          <label>Período</label>
-          <select id="turma-periodo">
-            <option>Manhã</option>
-            <option>Tarde</option>
-            <option>Noite</option>
-            <option>Integral</option>
-          </select>
-        </div>
+        <div><label>Escola</label><select id="turma-escola"></select></div>
+        <div><label>Nome da turma</label><input id="turma-nome" placeholder="Ex: 6º Ano A" /></div>
+        <div><label>Período</label><select id="turma-periodo"><option>Manhã</option><option>Tarde</option><option>Noite</option><option>Integral</option></select></div>
         <button class="btn btn-primary" onclick="addTurma()">Adicionar</button>
       </div>
     </div>
     <div class="card">
-      <table>
-        <thead><tr><th>Escola</th><th>Turma</th><th>Período</th><th style="width:80px">Ações</th></tr></thead>
-        <tbody id="lista-turmas"></tbody>
-      </table>
+      <table><thead><tr><th>Escola</th><th>Turma</th><th>Período</th><th style="width:80px">Ações</th></tr></thead><tbody id="lista-turmas"></tbody></table>
     </div>
   </section>
 
-  <!-- OFERTAS -->
   <section class="panel" id="panel-ofertas">
     <div class="card">
       <div class="form-row">
-        <div>
-          <label>Turma</label>
-          <select id="oferta-turma"></select>
-        </div>
-        <div>
-          <label>Disciplina</label>
-          <select id="oferta-disciplina"></select>
-        </div>
-        <div>
-          <label>Aulas semanais</label>
-          <input id="oferta-aulas" type="number" min="1" value="1" />
-        </div>
+        <div><label>Turma</label><select id="oferta-turma"></select></div>
+        <div><label>Disciplina</label><select id="oferta-disciplina"></select></div>
+        <div><label>Aulas semanais</label><input id="oferta-aulas" type="number" min="1" value="1" /></div>
         <button class="btn btn-primary" onclick="addOferta()">Adicionar</button>
       </div>
     </div>
     <div class="card">
-      <table>
-        <thead>
-          <tr><th>Escola</th><th>Turma</th><th>Disciplina</th><th>Aulas</th><th style="width:80px">Ações</th></tr>
-        </thead>
-        <tbody id="lista-ofertas"></tbody>
-      </table>
+      <table><thead><tr><th>Escola</th><th>Turma</th><th>Disciplina</th><th>Aulas</th><th style="width:80px">Ações</th></tr></thead><tbody id="lista-ofertas"></tbody></table>
     </div>
   </section>
 
-  <!-- PROFESSORES -->
   <section class="panel" id="panel-professores">
     <div class="card">
       <div class="form-row">
-        <div>
-          <label>Nome completo</label>
-          <input id="prof-nome" placeholder="Ex: João da Silva" />
-        </div>
-        <div>
-          <label>E-mail (opcional)</label>
-          <input id="prof-email" type="email" />
-        </div>
-        <div>
-          <label>Disciplina</label>
-          <select id="prof-disciplina"></select>
-        </div>
+        <div><label>Nome completo</label><input id="prof-nome" placeholder="Ex: João da Silva" /></div>
+        <div><label>E-mail (opcional)</label><input id="prof-email" type="email" /></div>
+        <div><label>RG</label><input id="prof-rg" placeholder="Ex: 20.143.972-4" /></div>
+        <div><label>CPF</label><input id="prof-cpf" placeholder="Ex: 090.134.298-07" /></div>
+        <div><label>Disciplina</label><select id="prof-disciplina"></select></div>
         <button class="btn btn-primary" onclick="addProfessor()">Adicionar</button>
       </div>
     </div>
     <div class="card">
-      <table>
-        <thead><tr><th>Nome</th><th>E-mail</th><th>Disciplina</th><th style="width:80px">Ações</th></tr></thead>
-        <tbody id="lista-professores"></tbody>
-      </table>
+      <table><thead><tr><th>Nome</th><th>E-mail</th><th>RG</th><th>CPF</th><th>Disciplina</th><th style="width:160px">Ações</th></tr></thead><tbody id="lista-professores"></tbody></table>
     </div>
   </section>
+</div>
+
+<!-- Modal de edição de professor -->
+<div class="modal-bg" id="modal-prof">
+  <div class="modal">
+    <h3>Editar professor</h3>
+    <input type="hidden" id="edit-prof-id" />
+    <div style="display:grid;gap:10px;">
+      <div><label>Nome completo</label><input id="edit-prof-nome" /></div>
+      <div><label>E-mail</label><input id="edit-prof-email" type="email" /></div>
+      <div><label>RG</label><input id="edit-prof-rg" /></div>
+      <div><label>CPF</label><input id="edit-prof-cpf" /></div>
+      <div><label>Disciplina</label><select id="edit-prof-disciplina"></select></div>
+    </div>
+    <div class="actions">
+      <button class="btn" style="background:#e5e7eb" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEdicaoProf()">Salvar</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ---------- Configuração Supabase ----------
 const SUPABASE_URL = 'https://dflzprsopnwgobcxuqfu.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_HAMF9aaI6tEtztq4pXAVPw_PM_9wyad';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ---------- Utilidades ----------
 const $ = (id) => document.getElementById(id);
 function toast(msg, erro = false) {
   const t = $('toast');
@@ -243,27 +169,18 @@ function toast(msg, erro = false) {
   setTimeout(() => t.className = 'toast', 2500);
 }
 function esc(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[c]));
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-
-// ---------- Autenticação ----------
 async function requireLogin() {
   const { data: { session } } = await supabaseClient.auth.getSession();
-  if (!session) {
-    window.location.href = 'index.html';
-    return null;
-  }
+  if (!session) { window.location.href = 'index.html'; return null; }
   return session;
 }
-
 async function logout() {
   await supabaseClient.auth.signOut();
   window.location.href = 'index.html';
 }
 
-// ---------- Navegação por abas ----------
 document.querySelectorAll('.tabs button').forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
@@ -273,10 +190,8 @@ document.querySelectorAll('.tabs button').forEach(btn => {
   };
 });
 
-// ---------- Cache de dados ----------
 let escolas = [], disciplinas = [], turmas = [], ofertas = [], professores = [];
 
-// ---------- Carregamento ----------
 async function carregarTudo() {
   const [e, d, t, o, p] = await Promise.all([
     supabaseClient.from('schools').select('*').order('name'),
@@ -291,60 +206,39 @@ async function carregarTudo() {
   if (o.error) return toast('Erro ofertas: ' + o.error.message, true);
   if (p.error) return toast('Erro professores: ' + p.error.message, true);
 
-  escolas = e.data || [];
-  disciplinas = d.data || [];
-  turmas = t.data || [];
-  ofertas = o.data || [];
-  professores = p.data || [];
+  escolas = e.data || []; disciplinas = d.data || []; turmas = t.data || [];
+  ofertas = o.data || []; professores = p.data || [];
   renderEscolas(); renderDisciplinas(); renderTurmas();
   renderOfertas(); renderProfessores(); preencherSelects();
 }
 
 function preencherSelects() {
-  $('turma-escola').innerHTML = escolas.map(e =>
-    `<option value="${e.id}">${esc(e.name)}</option>`).join('');
-
-  $('oferta-turma').innerHTML = turmas.map(t =>
-    `<option value="${t.id}">${esc(t.schools?.name)} — ${esc(t.name)} (${esc(t.period)})</option>`).join('');
-
-  const optDisc = disciplinas.map(d =>
-    `<option value="${d.id}">${esc(d.name)}</option>`).join('');
+  $('turma-escola').innerHTML = escolas.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
+  $('oferta-turma').innerHTML = turmas.map(t => `<option value="${t.id}">${esc(t.schools?.name)} — ${esc(t.name)} (${esc(t.period)})</option>`).join('');
+  const optDisc = disciplinas.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('');
   $('oferta-disciplina').innerHTML = optDisc;
   $('prof-disciplina').innerHTML = optDisc;
+  $('edit-prof-disciplina').innerHTML = optDisc;
 }
 
-// ---------- Renders ----------
 function renderEscolas() {
   $('lista-escolas').innerHTML = escolas.length
-    ? escolas.map(e => `<tr><td>${esc(e.name)}</td>
-        <td><button class="btn btn-danger" onclick="delEscola('${e.id}')">Excluir</button></td></tr>`).join('')
+    ? escolas.map(e => `<tr><td>${esc(e.name)}</td><td><button class="btn btn-danger" onclick="delEscola('${e.id}')">Excluir</button></td></tr>`).join('')
     : '<tr><td colspan="2" class="empty">Nenhuma escola cadastrada.</td></tr>';
 }
 function renderDisciplinas() {
   $('lista-disciplinas').innerHTML = disciplinas.length
-    ? disciplinas.map(d => `<tr><td>${esc(d.name)}</td>
-        <td><button class="btn btn-danger" onclick="delDisciplina('${d.id}')">Excluir</button></td></tr>`).join('')
+    ? disciplinas.map(d => `<tr><td>${esc(d.name)}</td><td><button class="btn btn-danger" onclick="delDisciplina('${d.id}')">Excluir</button></td></tr>`).join('')
     : '<tr><td colspan="2" class="empty">Nenhuma disciplina cadastrada.</td></tr>';
 }
 function renderTurmas() {
   $('lista-turmas').innerHTML = turmas.length
-    ? turmas.map(t => `<tr>
-        <td>${esc(t.schools?.name)}</td>
-        <td>${esc(t.name)}</td>
-        <td>${esc(t.period)}</td>
-        <td><button class="btn btn-danger" onclick="delTurma('${t.id}')">Excluir</button></td>
-      </tr>`).join('')
+    ? turmas.map(t => `<tr><td>${esc(t.schools?.name)}</td><td>${esc(t.name)}</td><td>${esc(t.period)}</td><td><button class="btn btn-danger" onclick="delTurma('${t.id}')">Excluir</button></td></tr>`).join('')
     : '<tr><td colspan="4" class="empty">Nenhuma turma cadastrada.</td></tr>';
 }
 function renderOfertas() {
   $('lista-ofertas').innerHTML = ofertas.length
-    ? ofertas.map(o => `<tr>
-        <td>${esc(o.classes?.schools?.name)}</td>
-        <td>${esc(o.classes?.name)} (${esc(o.classes?.period)})</td>
-        <td>${esc(o.disciplines?.name)}</td>
-        <td>${o.lesson_count}</td>
-        <td><button class="btn btn-danger" onclick="delOferta('${o.id}')">Excluir</button></td>
-      </tr>`).join('')
+    ? ofertas.map(o => `<tr><td>${esc(o.classes?.schools?.name)}</td><td>${esc(o.classes?.name)} (${esc(o.classes?.period)})</td><td>${esc(o.disciplines?.name)}</td><td>${o.lesson_count}</td><td><button class="btn btn-danger" onclick="delOferta('${o.id}')">Excluir</button></td></tr>`).join('')
     : '<tr><td colspan="5" class="empty">Nenhuma oferta cadastrada.</td></tr>';
 }
 function renderProfessores() {
@@ -352,20 +246,23 @@ function renderProfessores() {
     ? professores.map(p => `<tr>
         <td>${esc(p.full_name)}</td>
         <td>${esc(p.email || '—')}</td>
+        <td>${esc(p.rg || '—')}</td>
+        <td>${esc(p.cpf || '—')}</td>
         <td>${esc(p.disciplines?.name || '—')}</td>
-        <td><button class="btn btn-danger" onclick="delProfessor('${p.id}')">Excluir</button></td>
+        <td>
+          <button class="btn btn-edit" onclick="abrirEdicao('${p.id}')">Editar</button>
+          <button class="btn btn-danger" onclick="delProfessor('${p.id}')">Excluir</button>
+        </td>
       </tr>`).join('')
-    : '<tr><td colspan="4" class="empty">Nenhum professor cadastrado.</td></tr>';
+    : '<tr><td colspan="6" class="empty">Nenhum professor cadastrado.</td></tr>';
 }
 
-// ---------- Operações ----------
 async function addEscola() {
   const name = $('escola-nome').value.trim();
   if (!name) return toast('Digite o nome da escola', true);
   const { error } = await supabaseClient.from('schools').insert({ name });
   if (error) return toast(error.message, true);
-  $('escola-nome').value = '';
-  toast('Escola adicionada'); carregarTudo();
+  $('escola-nome').value = ''; toast('Escola adicionada'); carregarTudo();
 }
 async function delEscola(id) {
   if (!confirm('Excluir esta escola? Todas as turmas dela também serão removidas.')) return;
@@ -373,14 +270,12 @@ async function delEscola(id) {
   if (error) return toast(error.message, true);
   toast('Escola removida'); carregarTudo();
 }
-
 async function addDisciplina() {
   const name = $('disciplina-nome').value.trim();
   if (!name) return toast('Digite o nome da disciplina', true);
   const { error } = await supabaseClient.from('disciplines').insert({ name });
   if (error) return toast(error.message, true);
-  $('disciplina-nome').value = '';
-  toast('Disciplina adicionada'); carregarTudo();
+  $('disciplina-nome').value = ''; toast('Disciplina adicionada'); carregarTudo();
 }
 async function delDisciplina(id) {
   if (!confirm('Excluir esta disciplina?')) return;
@@ -388,7 +283,6 @@ async function delDisciplina(id) {
   if (error) return toast(error.message, true);
   toast('Disciplina removida'); carregarTudo();
 }
-
 async function addTurma() {
   const school_id = $('turma-escola').value;
   const name = $('turma-nome').value.trim();
@@ -396,8 +290,7 @@ async function addTurma() {
   if (!school_id || !name) return toast('Preencha escola e nome', true);
   const { error } = await supabaseClient.from('classes').insert({ school_id, name, period });
   if (error) return toast(error.message, true);
-  $('turma-nome').value = '';
-  toast('Turma adicionada'); carregarTudo();
+  $('turma-nome').value = ''; toast('Turma adicionada'); carregarTudo();
 }
 async function delTurma(id) {
   if (!confirm('Excluir esta turma?')) return;
@@ -405,7 +298,6 @@ async function delTurma(id) {
   if (error) return toast(error.message, true);
   toast('Turma removida'); carregarTudo();
 }
-
 async function addOferta() {
   const class_id = $('oferta-turma').value;
   const discipline_id = $('oferta-disciplina').value;
@@ -421,15 +313,17 @@ async function delOferta(id) {
   if (error) return toast(error.message, true);
   toast('Oferta removida'); carregarTudo();
 }
-
 async function addProfessor() {
   const full_name = $('prof-nome').value.trim();
   const email = $('prof-email').value.trim() || null;
+  const rg = $('prof-rg').value.trim() || null;
+  const cpf = $('prof-cpf').value.trim() || null;
   const discipline_id = $('prof-disciplina').value || null;
   if (!full_name) return toast('Digite o nome do professor', true);
-  const { error } = await supabaseClient.from('teachers').insert({ full_name, email, discipline_id });
+  const { error } = await supabaseClient.from('teachers').insert({ full_name, email, rg, cpf, discipline_id });
   if (error) return toast(error.message, true);
   $('prof-nome').value = ''; $('prof-email').value = '';
+  $('prof-rg').value = ''; $('prof-cpf').value = '';
   toast('Professor adicionado'); carregarTudo();
 }
 async function delProfessor(id) {
@@ -439,7 +333,33 @@ async function delProfessor(id) {
   toast('Professor removido'); carregarTudo();
 }
 
-// ---------- Inicialização ----------
+function abrirEdicao(id) {
+  const p = professores.find(x => x.id === id);
+  if (!p) return;
+  $('edit-prof-id').value = p.id;
+  $('edit-prof-nome').value = p.full_name || '';
+  $('edit-prof-email').value = p.email || '';
+  $('edit-prof-rg').value = p.rg || '';
+  $('edit-prof-cpf').value = p.cpf || '';
+  $('edit-prof-disciplina').value = p.discipline_id || '';
+  $('modal-prof').classList.add('show');
+}
+function fecharModal() {
+  $('modal-prof').classList.remove('show');
+}
+async function salvarEdicaoProf() {
+  const id = $('edit-prof-id').value;
+  const full_name = $('edit-prof-nome').value.trim();
+  const email = $('edit-prof-email').value.trim() || null;
+  const rg = $('edit-prof-rg').value.trim() || null;
+  const cpf = $('edit-prof-cpf').value.trim() || null;
+  const discipline_id = $('edit-prof-disciplina').value || null;
+  if (!full_name) return toast('Digite o nome', true);
+  const { error } = await supabaseClient.from('teachers').update({ full_name, email, rg, cpf, discipline_id }).eq('id', id);
+  if (error) return toast(error.message, true);
+  fecharModal(); toast('Professor atualizado'); carregarTudo();
+}
+
 (async () => {
   const session = await requireLogin();
   if (!session) return;
