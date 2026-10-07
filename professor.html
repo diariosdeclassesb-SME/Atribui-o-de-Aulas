@@ -40,6 +40,8 @@
   .btn-primary:hover { background: #1e40af; }
   .btn-secondary { background: #e5e7eb; color: #111; }
   .btn-secondary:hover { background: #d1d5db; }
+  .btn-success { background: #059669; color: #fff; }
+  .btn-success:hover { background: #047857; }
 
   /* =============== DOCUMENTO =============== */
   .doc-wrap { padding: 20px 0; display: flex; justify-content: center; }
@@ -71,16 +73,10 @@
   .doc-cabecalho .titulo {
     text-align: center; line-height: 1.3; flex: 1;
   }
-  .doc-cabecalho .titulo .pref {
-    font-weight: 700; font-size: 11px; letter-spacing: .3px;
-  }
-  .doc-cabecalho .titulo .sec {
-    font-weight: 700; font-size: 11px;
-  }
+  .doc-cabecalho .titulo .pref { font-weight: 700; font-size: 11px; letter-spacing: .3px; }
+  .doc-cabecalho .titulo .sec { font-weight: 700; font-size: 11px; }
   .doc-cabecalho .titulo .end,
-  .doc-cabecalho .titulo .tel {
-    font-size: 8.5px;
-  }
+  .doc-cabecalho .titulo .tel { font-size: 8.5px; }
   .doc-cabecalho .dir {
     text-align: right;
     font-size: 11px; font-weight: 700; line-height: 1.3;
@@ -106,8 +102,25 @@
   }
   .info-grid .cell:nth-child(4n) { border-right: none; }
   .info-grid .cell .num { font-weight: 700; }
-  .info-grid .cell .val { font-weight: 400; }
   .info-grid .row-last { border-bottom: none; }
+
+  /* Inputs editáveis dentro do documento */
+  .field-doc {
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 9px;
+    padding: 0 2px;
+    width: 100%;
+    color: #000;
+    font-weight: 400;
+  }
+  .field-doc:focus {
+    background: #fef3c7;
+    outline: 1px solid #f59e0b;
+  }
+  .field-doc.auto { background: #f3f4f6; }
+  .field-doc.auto:focus { background: #fef3c7; }
 
   /* Tabela de blocos I / II / III */
   table.daca {
@@ -138,15 +151,13 @@
   .col-escola { width: 90px; }
   .col-turma { width: 30px; }
   .col-turmas { width: auto; }
-  .col-periodo { width: 28px; text-align: center; }
+  .col-per { width: 16px; text-align: center; font-size: 8.5px; }
   .col-situacao { width: 32px; text-align: center; }
   .col-sem { width: 30px; text-align: center; }
   .col-mes { width: 40px; text-align: center; }
   .col-assin { width: 80px; text-align: center; }
 
   .sub-header th { background: #e5e7eb; font-size: 7.5px; }
-
-  .linha-turma td { height: 16px; font-size: 9px; }
 
   .sec-titulo {
     background: #f3f4f6; text-align: center; font-weight: 700;
@@ -161,17 +172,13 @@
   .field-edit:focus {
     background: #fef3c7; outline: 1px solid #f59e0b;
   }
-  /* Remove as setinhas do input number */
   .field-edit::-webkit-outer-spin-button,
   .field-edit::-webkit-inner-spin-button {
     -webkit-appearance: none; margin: 0;
   }
   .field-edit[type=number] { -moz-appearance: textfield; }
 
-  .assinatura-linha {
-    border-bottom: 1px solid #000;
-    height: 12px;
-  }
+  .assinatura-linha { border-bottom: 1px solid #000; height: 12px; }
 
   /* Rodapé ATA */
   .ata-box {
@@ -184,9 +191,7 @@
     min-height: 90px;
   }
   .ata-box .ata-label { font-weight: 700; }
-  .ata-box:focus {
-    outline: 2px solid #f59e0b; outline-offset: -2px;
-  }
+  .ata-box:focus { outline: 2px solid #f59e0b; outline-offset: -2px; }
 
   /* Assinaturas finais */
   .assinaturas-finais {
@@ -215,8 +220,10 @@
       box-shadow: none; width: 100%; min-height: 0;
       padding: 0;
     }
-    .field-edit:focus { background: transparent; outline: none; }
-    .ata-box:focus { outline: none; }
+    .field-edit:focus,
+    .field-doc:focus,
+    .ata-box:focus { background: transparent; outline: none; }
+    .field-doc.auto { background: transparent; }
   }
 
   .toast {
@@ -259,7 +266,7 @@
     <input type="date" id="data-atribuicao" />
   </div>
   <button class="btn btn-primary" onclick="window.print()">Imprimir</button>
-  <button class="btn btn-secondary" onclick="salvarManuais()">Salvar Aulas</button>
+  <button class="btn btn-success" onclick="salvarTudo()">Salvar</button>
 </div>
 
 <div class="doc-wrap">
@@ -319,6 +326,7 @@ async function logout() {
 let professores = [];
 let dadosDaca = { titular: [], carga: [], deixou: [], assumiu: [] };
 let manuais = {};
+let dadosProf = {}; // dados de teacher_daca_data
 let teacherAtualId = null;
 
 // ============================================================
@@ -337,6 +345,16 @@ async function carregarProfessores() {
     professores.map(p =>
       `<option value="${p.id}">${esc(p.full_name)} — ${esc(p.disciplines?.name || 'sem disciplina')}</option>`
     ).join('');
+}
+
+async function carregarDadosProf(teacherId) {
+  const { data, error } = await supabaseClient
+    .from('teacher_daca_data')
+    .select('*')
+    .eq('teacher_id', teacherId)
+    .maybeSingle();
+  if (error) { toast(error.message, 'error'); return; }
+  dadosProf = data || {};
 }
 
 async function carregarManuais(teacherId) {
@@ -375,7 +393,10 @@ async function carregarDaca(teacherId) {
   dadosDaca = { titular: [], carga: [], deixou: [], assumiu: [] };
   (data || []).forEach(r => { dadosDaca[r.bloco].push(r); });
 
-  await carregarManuais(teacherId);
+  await Promise.all([
+    carregarManuais(teacherId),
+    carregarDadosProf(teacherId),
+  ]);
   renderizar();
 }
 
@@ -391,7 +412,7 @@ function renderizar() {
     ? new Date($('data-atribuicao').value + 'T00:00:00').toLocaleDateString('pt-BR')
     : dataHojeBR();
 
-  // Unidade sede = escola com mais turmas atribuídas (titular + carga + assumiu)
+  // Unidade sede = escola com mais turmas atribuídas
   const contagemEscolas = {};
   ['titular', 'carga', 'assumiu'].forEach(b => {
     dadosDaca[b].forEach(r => {
@@ -410,10 +431,13 @@ function renderizar() {
   const totalTitular = somarAulasMes('titular');
   const totalCarga = somarAulasMes('carga');
 
-  // rowspan dos blocos: mínimo 1 para não quebrar layout quando vazio
-  const rowspanTitular = Math.max(dadosDaca.titular.length, 1) + 1; // +1 do total
+  const rowspanTitular = Math.max(dadosDaca.titular.length, 1) + 1;
   const rowspanCarga = Math.max(dadosDaca.carga.length, 1) + 1;
-  const rowspanSubst = Math.max(dadosDaca.deixou.length, 1) + Math.max(dadosDaca.assumiu.length, 1) + 2; // 2 títulos de seção
+  const rowspanSubst = Math.max(dadosDaca.deixou.length, 1) + Math.max(dadosDaca.assumiu.length, 1) + 2;
+
+  // Values dos campos do professor
+  const dp = dadosProf;
+  const v = (x) => esc(x ?? '');
 
   $('doc').innerHTML = `
     <div class="doc-cabecalho">
@@ -435,22 +459,86 @@ function renderizar() {
     </div>
 
     <div class="info-grid">
-      <div class="cell"><span class="num">1- Unidade Sede de Controle de Frequência:</span> <span class="val">${esc(unidadeSede)}</span></div>
-      <div class="cell"><span class="num">2- Data da Atribuição:</span> <span class="val">${esc(dataAtrib)}</span></div>
-      <div class="cell"><span class="num">3- PEB:</span> <span class="val">—</span></div>
-      <div class="cell"><span class="num">4- Disciplina:</span> <span class="val">${esc(prof.disciplines?.name || '—')}</span></div>
+      <div class="cell">
+        <span class="num">1- Unidade Sede de Controle de Frequência:</span>
+        <input class="field-doc auto" id="f-unidade" value="${v(unidadeSede)}">
+      </div>
+      <div class="cell">
+        <span class="num">2- Data da Atribuição:</span> <span>${esc(dataAtrib)}</span>
+      </div>
+      <div class="cell">
+        <span class="num">3- PEB:</span>
+        <select class="field-doc" id="f-peb">
+          <option value="">—</option>
+          <option value="PEB I" ${dp.peb === 'PEB I' ? 'selected' : ''}>PEB I</option>
+          <option value="PEB II" ${dp.peb === 'PEB II' ? 'selected' : ''}>PEB II</option>
+          <option value="PEB III" ${dp.peb === 'PEB III' ? 'selected' : ''}>PEB III</option>
+        </select>
+      </div>
+      <div class="cell">
+        <span class="num">4- Disciplina:</span> <span>${esc(prof.disciplines?.name || '—')}</span>
+      </div>
 
-      <div class="cell"><span class="num">5- Classificação:</span> <span class="val">—</span></div>
-      <div class="cell"><span class="num">6- Nome do Professor:</span> <span class="val">${esc(prof.full_name)}</span></div>
-      <div class="cell"><span class="num">7- RG:</span> <span class="val">—</span></div>
-      <div class="cell"><span class="num">8- CPF:</span> <span class="val">—</span></div>
+      <div class="cell">
+        <span class="num">5- Classificação:</span>
+        <input class="field-doc" id="f-classificacao" value="${v(dp.classificacao)}">
+      </div>
+      <div class="cell">
+        <span class="num">6- Nome do Professor:</span>
+        <input class="field-doc auto" id="f-nome" value="${v(prof.full_name)}">
+      </div>
+      <div class="cell">
+        <span class="num">7- RG:</span>
+        <input class="field-doc" id="f-rg" value="${v(dp.rg)}">
+      </div>
+      <div class="cell">
+        <span class="num">8- CPF:</span>
+        <input class="field-doc" id="f-cpf" value="${v(dp.cpf)}">
+      </div>
 
-      <div class="cell"><span class="num">9- Jornada:</span> <span class="val">—</span></div>
-      <div class="cell"><span class="num">10- Categoria:</span> <span class="val">—</span></div>
-      <div class="cell"><span class="num">11- Afastamento:</span> <span class="val">—</span></div>
-      <div class="cell"><span class="num">12- Carga Suplementar:</span> <span class="val">—</span></div>
+      <div class="cell">
+        <span class="num">9- Jornada:</span>
+        <input class="field-doc" id="f-jornada" value="${v(dp.jornada)}">
+      </div>
+      <div class="cell">
+        <span class="num">10- Categoria:</span>
+        <select class="field-doc" id="f-categoria">
+          <option value="">—</option>
+          <option value="Efetivo" ${dp.categoria === 'Efetivo' ? 'selected' : ''}>Efetivo</option>
+          <option value="Efetivo em Período Probatório" ${dp.categoria === 'Efetivo em Período Probatório' ? 'selected' : ''}>Efetivo em Período Probatório</option>
+        </select>
+      </div>
+      <div class="cell">
+        <span class="num">11- Afastamento:</span>
+        <input class="field-doc" id="f-afastamento" list="lista-afastamento" value="${v(dp.afastamento)}">
+        <datalist id="lista-afastamento">
+          <option value="Professor Mediador">
+          <option value="Centro Técnico e Pedagógico">
+          <option value="Vice Diretor">
+          <option value="Diretor de Planejamento">
+          <option value="Secretário Adjunto de Educação">
+          <option value="Secretário de Educação">
+          <option value="Professor Auxiliar">
+        </datalist>
+      </div>
+      <div class="cell">
+        <span class="num">12- Carga Suplementar:</span>
+        <select class="field-doc" id="f-carga-sup">
+          <option value="">—</option>
+          <option value="Sim" ${dp.carga_suplementar === 'Sim' ? 'selected' : ''}>Sim</option>
+          <option value="Não" ${dp.carga_suplementar === 'Não' ? 'selected' : ''}>Não</option>
+        </select>
+      </div>
 
-      <div class="cell row-last" style="grid-column: 1 / 4;"><span class="num">13- Professor Excedente:</span> <span class="val">—</span></div>
+      <div class="cell row-last" style="grid-column: 1 / 4;">
+        <span class="num">13- Professor Excedente:</span>
+        <select class="field-doc" id="f-excedente" style="width:auto;">
+          <option value="">—</option>
+          <option value="Sim" ${dp.professor_excedente === 'Sim' ? 'selected' : ''}>Sim</option>
+          <option value="Não" ${dp.professor_excedente === 'Não' ? 'selected' : ''}>Não</option>
+          <option value="Parcial" ${dp.professor_excedente === 'Parcial' ? 'selected' : ''}>Parcial</option>
+        </select>
+      </div>
       <div class="cell row-last" style="border-right:none;border-bottom:none;"></div>
     </div>
 
@@ -460,7 +548,10 @@ function renderizar() {
         <col style="width:90px">
         <col style="width:30px">
         <col>
-        <col style="width:28px">
+        <col style="width:16px">
+        <col style="width:16px">
+        <col style="width:16px">
+        <col style="width:16px">
         <col style="width:32px">
         <col style="width:32px">
         <col style="width:30px">
@@ -474,13 +565,16 @@ function renderizar() {
           <th rowspan="2">Unidade Escolar</th>
           <th rowspan="2">Turma</th>
           <th rowspan="2">Classes Atribuídas</th>
-          <th>Período</th>
+          <th colspan="4">Período</th>
           <th colspan="2">Situação das Aulas</th>
           <th colspan="3">Nº de Aulas</th>
           <th rowspan="2">Assinatura</th>
         </tr>
         <tr class="sub-header">
-          <th>M/T/N/I</th>
+          <th>M</th>
+          <th>T</th>
+          <th>N</th>
+          <th>I</th>
           <th>Deixou</th>
           <th>Assumiu</th>
           <th>1ª Sem</th>
@@ -492,10 +586,10 @@ function renderizar() {
         <!-- BLOCO I - TITULAR -->
         <tr>
           <td rowspan="${rowspanTitular}" class="bloco-label">I<br>Titular</td>
-          ${linhasTitular || `<td colspan="10" style="text-align:center;color:#6b7280;">Nenhuma turma atribuída como Titular</td>`}
+          ${linhasTitular || `<td colspan="13" style="text-align:center;color:#6b7280;">Nenhuma turma atribuída como Titular</td>`}
         </tr>
         <tr>
-          <td colspan="9" style="background:#f9fafb;font-weight:700;text-align:right;font-size:8.5px;">
+          <td colspan="12" style="background:#f9fafb;font-weight:700;text-align:right;font-size:8.5px;">
             Total de Aulas do Mês:
           </td>
           <td style="text-align:center;font-weight:700;">${totalTitular}</td>
@@ -504,10 +598,10 @@ function renderizar() {
         <!-- BLOCO II - CARGA SUPLEMENTAR -->
         <tr>
           <td rowspan="${rowspanCarga}" class="bloco-label">II<br>Carga<br>Suplem.</td>
-          ${linhasCarga || `<td colspan="10" style="text-align:center;color:#6b7280;">Nenhuma turma em Carga Suplementar</td>`}
+          ${linhasCarga || `<td colspan="13" style="text-align:center;color:#6b7280;">Nenhuma turma em Carga Suplementar</td>`}
         </tr>
         <tr>
-          <td colspan="9" style="background:#f9fafb;font-weight:700;text-align:right;font-size:8.5px;">
+          <td colspan="12" style="background:#f9fafb;font-weight:700;text-align:right;font-size:8.5px;">
             Total de Aulas do Mês:
           </td>
           <td style="text-align:center;font-weight:700;">${totalCarga}</td>
@@ -516,13 +610,13 @@ function renderizar() {
         <!-- BLOCO III - SUBSTITUIÇÃO -->
         <tr>
           <td rowspan="${rowspanSubst}" class="bloco-label">III<br>Substituição</td>
-          <td colspan="10" class="sec-titulo">Deixou as seguintes Classes:</td>
+          <td colspan="13" class="sec-titulo">Deixou as seguintes Classes:</td>
         </tr>
-        ${linhasDeixou || `<tr><td colspan="10" style="text-align:center;color:#6b7280;font-size:9px;">—</td></tr>`}
+        ${linhasDeixou || `<tr><td colspan="13" style="text-align:center;color:#6b7280;font-size:9px;">—</td></tr>`}
         <tr>
-          <td colspan="10" class="sec-titulo">Assumiu as seguintes Classes:</td>
+          <td colspan="13" class="sec-titulo">Assumiu as seguintes Classes:</td>
         </tr>
-        ${linhasAssumiu || `<tr><td colspan="10" style="text-align:center;color:#6b7280;font-size:9px;">—</td></tr>`}
+        ${linhasAssumiu || `<tr><td colspan="13" style="text-align:center;color:#6b7280;font-size:9px;">—</td></tr>`}
       </tbody>
     </table>
 
@@ -544,17 +638,25 @@ function renderizar() {
   `;
 }
 
+function marcarX(periodo, letra) {
+  return (periodo || '').charAt(0).toUpperCase() === letra ? 'X' : '';
+}
+
 function renderLinhas(lista, bloco, mostrarSituacao) {
   if (!lista || lista.length === 0) return '';
-  return lista.map((r, i) => {
+  return lista.map((r) => {
     const key = `${r.assignment_id}|${bloco}`;
     const m = manuais[key] || { aulas_1sem: '', aulas_2sem: '', aulas_mes: '' };
+    const per = (r.class_period || '').charAt(0).toUpperCase();
     return `
       <tr>
         <td>${esc(r.school_name)}</td>
         <td style="text-align:center;">${esc(r.class_name)}</td>
         <td>${esc(r.class_name)}</td>
-        <td style="text-align:center;">${esc((r.class_period || '').charAt(0))}</td>
+        <td class="col-per">${marcarX(r.class_period, 'M')}</td>
+        <td class="col-per">${marcarX(r.class_period, 'T')}</td>
+        <td class="col-per">${marcarX(r.class_period, 'N')}</td>
+        <td class="col-per">${marcarX(r.class_period, 'I')}</td>
         ${mostrarSituacao
           ? `<td style="text-align:center;">${bloco === 'deixou' ? 'X' : ''}</td>
              <td style="text-align:center;">${bloco === 'assumiu' ? 'X' : ''}</td>`
@@ -579,11 +681,33 @@ function somarAulasMes(bloco) {
 }
 
 // ============================================================
-// SALVAR DADOS MANUAIS
+// SALVAR TUDO (dados do professor + aulas)
 // ============================================================
-async function salvarManuais() {
+async function salvarTudo() {
   if (!teacherAtualId) return toast('Selecione um professor primeiro', 'error');
 
+  // 1. Salva dados do professor (teacher_daca_data)
+  const dados = {
+    teacher_id: teacherAtualId,
+    peb: $('f-peb')?.value || null,
+    classificacao: $('f-classificacao')?.value || null,
+    rg: $('f-rg')?.value || null,
+    cpf: $('f-cpf')?.value || null,
+    jornada: $('f-jornada')?.value || null,
+    categoria: $('f-categoria')?.value || null,
+    afastamento: $('f-afastamento')?.value || null,
+    carga_suplementar: $('f-carga-sup')?.value || null,
+    professor_excedente: $('f-excedente')?.value || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error: err1 } = await supabaseClient
+    .from('teacher_daca_data')
+    .upsert(dados, { onConflict: 'teacher_id' });
+
+  if (err1) return toast('Erro dados professor: ' + err1.message, 'error');
+
+  // 2. Salva aulas manuais (daca_manual_fields)
   const inputs = document.querySelectorAll('input.field-edit[data-key]');
   const agrupados = {};
 
@@ -605,15 +729,18 @@ async function salvarManuais() {
     updated_at: new Date().toISOString(),
   }));
 
-  if (registros.length === 0) return toast('Nada para salvar');
+  if (registros.length > 0) {
+    const { error: err2 } = await supabaseClient
+      .from('daca_manual_fields')
+      .upsert(registros, { onConflict: 'teacher_id,assignment_id,bloco' });
+    if (err2) return toast('Erro aulas: ' + err2.message, 'error');
+  }
 
-  const { error } = await supabaseClient
-    .from('daca_manual_fields')
-    .upsert(registros, { onConflict: 'teacher_id,assignment_id,bloco' });
-
-  if (error) return toast(error.message, 'error');
-  toast('Dados manuais salvos', 'success');
-  await carregarManuais(teacherAtualId);
+  toast('Dados salvos com sucesso', 'success');
+  await Promise.all([
+    carregarManuais(teacherAtualId),
+    carregarDadosProf(teacherAtualId),
+  ]);
   renderizar();
 }
 
