@@ -25,13 +25,38 @@
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
   th { background: #f9fafb; font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; }
-  .right { text-align: right; }
-  .center { text-align: center; }
+  .right { text-align: right; } .center { text-align: center; }
   .empty { color: var(--muted); padding: 30px; text-align: center; }
   .totais-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
   .totais-grid .item { background: #f9fafb; border-radius: 6px; padding: 12px 16px; }
   .totais-grid .label { font-size: 11px; color: var(--muted); text-transform: uppercase; }
   .totais-grid .valor { font-size: 22px; font-weight: 700; color: var(--primary); }
+
+  tr.prof-row { cursor: pointer; }
+  tr.prof-row:hover { background: #f9fafb; }
+  tr.prof-row .toggle {
+    display: inline-block; width: 16px; color: var(--primary);
+    font-weight: 700; transition: transform .2s;
+  }
+  tr.prof-row.expanded .toggle { transform: rotate(90deg); }
+
+  tr.detail-row { display: none; background: #f9fafb; }
+  tr.detail-row.show { display: table-row; }
+  tr.detail-row td { padding: 0; border-bottom: 1px solid var(--border); }
+  .detail-inner { padding: 12px 20px 16px 40px; }
+  .detail-inner h4 {
+    margin: 0 0 8px; font-size: 12px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+  .detail-inner table { font-size: 13px; background: white; border-radius: 6px; overflow: hidden; }
+  .detail-inner th, .detail-inner td { padding: 6px 10px; }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge-titular { background: #dbeafe; color: #1e40af; }
+  .badge-carga { background: #fef3c7; color: #92400e; }
+  .badge-subst { background: #ede9fe; color: #5b21b6; }
 
   @media print {
     @page { size: A4 landscape; margin: 10mm; }
@@ -39,7 +64,10 @@
     body { background: #fff; }
     .container { max-width: 100%; margin: 0; padding: 0; }
     .card { border: none; padding: 0; }
+    tr.detail-row { display: table-row !important; }
   }
+  .toast { position: fixed; bottom: 20px; right: 20px; background: #111827; color: white; padding: 12px 20px; border-radius: 6px; font-size: 14px; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
 </style>
 </head>
 <body>
@@ -59,27 +87,19 @@
 <div class="container">
   <div class="card no-print">
     <div class="filtros">
-      <div>
-        <label>Escola</label>
-        <input id="f-escola" placeholder="Filtrar por escola" />
-      </div>
+      <div><label>Escola</label><input id="f-escola" placeholder="Filtrar por escola" /></div>
       <div>
         <label>Período</label>
         <select id="f-periodo">
-          <option value="">Todos</option>
-          <option>Manhã</option>
-          <option>Tarde</option>
-          <option>Noite</option>
-          <option>Integral</option>
+          <option value="">Todos</option><option>Manhã</option><option>Tarde</option>
+          <option>Noite</option><option>Integral</option>
         </select>
       </div>
-      <div>
-        <label>Professor</label>
-        <input id="f-professor" placeholder="Filtrar por nome" />
-      </div>
-      <div style="display:flex; gap:8px;">
+      <div><label>Professor</label><input id="f-professor" placeholder="Filtrar por nome" /></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <button class="btn btn-primary" onclick="carregarRelatorio()">Filtrar</button>
         <button class="btn btn-secondary" onclick="limparFiltros()">Limpar</button>
+        <button class="btn btn-secondary" onclick="expandirTodos()">Expandir todos</button>
         <button class="btn btn-secondary" onclick="window.print()">Imprimir</button>
       </div>
     </div>
@@ -87,30 +107,21 @@
 
   <div class="card">
     <h2 style="text-align:center;margin:0 0 4px;font-size:16px;">Prefeitura Municipal de Santa Branca</h2>
-    <p style="text-align:center;color:var(--muted);margin:0 0 20px;font-size:13px;">Relatório Geral de Atribuições de Aulas — <span id="data-rel"></span></p>
+    <p style="text-align:center;color:var(--muted);margin:0 0 20px;font-size:13px;">
+      Relatório Geral de Atribuições de Aulas — <span id="data-rel"></span>
+    </p>
 
     <div class="totais-grid">
-      <div class="item">
-        <div class="label">Professores com atribuições</div>
-        <div class="valor" id="t-prof">0</div>
-      </div>
-      <div class="item">
-        <div class="label">Total de turmas atribuídas</div>
-        <div class="valor" id="t-turmas">0</div>
-      </div>
-      <div class="item">
-        <div class="label">Total de aulas</div>
-        <div class="valor" id="t-aulas">0</div>
-      </div>
-      <div class="item">
-        <div class="label">Escolas envolvidas</div>
-        <div class="valor" id="t-escolas">0</div>
-      </div>
+      <div class="item"><div class="label">Professores</div><div class="valor" id="t-prof">0</div></div>
+      <div class="item"><div class="label">Turmas atribuídas</div><div class="valor" id="t-turmas">0</div></div>
+      <div class="item"><div class="label">Aulas</div><div class="valor" id="t-aulas">0</div></div>
+      <div class="item"><div class="label">Escolas</div><div class="valor" id="t-escolas">0</div></div>
     </div>
 
     <table>
       <thead>
         <tr>
+          <th style="width:30px"></th>
           <th>Professor</th>
           <th>Disciplina</th>
           <th>Escola Sede</th>
@@ -120,7 +131,7 @@
         </tr>
       </thead>
       <tbody id="lista-rel">
-        <tr><td colspan="6" class="empty">Carregando...</td></tr>
+        <tr><td colspan="7" class="empty">Carregando...</td></tr>
       </tbody>
     </table>
   </div>
@@ -152,6 +163,9 @@ async function logout() {
   window.location.href = 'index.html';
 }
 
+let detalhesCache = {}; // teacherId -> array de turmas
+let professoresComDados = [];
+
 async function carregarRelatorio() {
   const escola = $('f-escola').value.trim() || null;
   const periodo = $('f-periodo').value || null;
@@ -163,24 +177,123 @@ async function carregarRelatorio() {
   if (error) return toast(error.message);
 
   const linhas = data || [];
-  $('lista-rel').innerHTML = linhas.length
-    ? linhas.map(r => `<tr>
-        <td>${esc(r.teacher_name)}</td>
-        <td>${esc(r.discipline_name || '—')}</td>
-        <td>${esc(r.escola_sede)}</td>
-        <td class="center">${r.total_turmas}</td>
-        <td class="center">${r.total_aulas}</td>
-        <td class="center">${r.escolas_distintas}</td>
-      </tr>`).join('')
-    : '<tr><td colspan="6" class="empty">Nenhum registro encontrado.</td></tr>';
+  professoresComDados = linhas;
 
-  // Totais gerais
+  $('lista-rel').innerHTML = linhas.length
+    ? linhas.map(r => `
+        <tr class="prof-row" data-teacher="${r.teacher_id}" onclick="toggleDetalhes('${r.teacher_id}', this)">
+          <td class="center"><span class="toggle">▶</span></td>
+          <td>${esc(r.teacher_name)}</td>
+          <td>${esc(r.discipline_name || '—')}</td>
+          <td>${esc(r.escola_sede)}</td>
+          <td class="center">${r.total_turmas}</td>
+          <td class="center">${r.total_aulas}</td>
+          <td class="center">${r.escolas_distintas}</td>
+        </tr>
+        <tr class="detail-row" id="detail-${r.teacher_id}">
+          <td colspan="7"><div class="detail-inner" id="detail-inner-${r.teacher_id}">
+            <em style="color:var(--muted);font-size:13px;">Clique para carregar as turmas...</em>
+          </div></td>
+        </tr>`).join('')
+    : '<tr><td colspan="7" class="empty">Nenhum registro encontrado.</td></tr>';
+
+  // Totais
   $('t-prof').textContent = linhas.length;
   $('t-turmas').textContent = linhas.reduce((s, r) => s + Number(r.total_turmas), 0);
   $('t-aulas').textContent = linhas.reduce((s, r) => s + Number(r.total_aulas), 0);
   $('t-escolas').textContent = new Set(linhas.map(r => r.escola_sede).filter(e => e !== '—')).size;
 
   $('data-rel').textContent = new Date().toLocaleDateString('pt-BR');
+}
+
+async function toggleDetalhes(teacherId, row) {
+  const detailRow = document.getElementById('detail-' + teacherId);
+  const isOpen = detailRow.classList.contains('show');
+
+  if (isOpen) {
+    detailRow.classList.remove('show');
+    row.classList.remove('expanded');
+    return;
+  }
+
+  row.classList.add('expanded');
+  detailRow.classList.add('show');
+
+  // Carrega só uma vez
+  if (!detalhesCache[teacherId]) {
+    const { data, error } = await supabaseClient.rpc('get_teacher_daca', { p_teacher_id: teacherId });
+    if (error) {
+      document.getElementById('detail-inner-' + teacherId).innerHTML =
+        `<span style="color:#dc2626;">Erro: ${esc(error.message)}</span>`;
+      return;
+    }
+    detalhesCache[teacherId] = data || [];
+  }
+
+  renderDetalhes(teacherId, detalhesCache[teacherId]);
+}
+
+function renderDetalhes(teacherId, lista) {
+  const inner = document.getElementById('detail-inner-' + teacherId);
+
+  const blocoLabel = {
+    titular: 'Titular',
+    carga: 'Carga Suplementar',
+    deixou: 'Deixou a turma',
+    assumiu: 'Assumiu como substituto',
+  };
+  const blocoClasse = {
+    titular: 'badge-titular',
+    carga: 'badge-carga',
+    deixou: 'badge-subst',
+    assumiu: 'badge-subst',
+  };
+
+  if (lista.length === 0) {
+    inner.innerHTML = '<em style="color:var(--muted);font-size:13px;">Nenhuma turma atribuída.</em>';
+    return;
+  }
+
+  // Agrupa por bloco
+  const porBloco = { titular: [], carga: [], deixou: [], assumiu: [] };
+  lista.forEach(r => porBloco[r.bloco]?.push(r));
+
+  const blocos = ['titular', 'carga', 'deixou', 'assumiu'].filter(b => porBloco[b].length > 0);
+
+  inner.innerHTML = blocos.map(bloco => `
+    <h4><span class="badge ${blocoClasse[bloco]}">${blocoLabel[bloco]}</span> — ${porBloco[bloco].length} turma(s)</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>Escola</th>
+          <th>Turma</th>
+          <th>Período</th>
+          <th>Disciplina</th>
+          <th class="center">Aulas</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${porBloco[bloco].map(t => `
+          <tr>
+            <td>${esc(t.school_name)}</td>
+            <td>${esc(t.class_name)}</td>
+            <td>${esc(t.class_period)}</td>
+            <td>${esc(t.discipline_name)}</td>
+            <td class="center">${t.lesson_count}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+  `).join('');
+}
+
+async function expandirTodos() {
+  const rows = document.querySelectorAll('tr.prof-row');
+  for (const row of rows) {
+    const teacherId = row.dataset.teacher;
+    if (!document.getElementById('detail-' + teacherId).classList.contains('show')) {
+      await toggleDetalhes(teacherId, row);
+    }
+  }
 }
 
 function limparFiltros() {
