@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Configurações — Sistema de Atribuição de Aulas</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root { --primary: #2563eb; --primary-dark: #1e40af; --bg: #f3f4f6; --card: #fff; --border: #e5e7eb; --text: #111827; --muted: #6b7280; }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: var(--bg); color: var(--text); }
+  header { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+  header h1 { font-size: 18px; margin: 0; }
+  header nav a { color: var(--text); text-decoration: none; margin-right: 16px; font-size: 14px; }
+  header nav a.active { color: var(--primary); font-weight: 600; }
+  .container { max-width: 900px; margin: 24px auto; padding: 0 16px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+  .card h2 { font-size: 15px; margin: 0 0 16px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; margin-top: 12px; }
+  input, textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white; font-family: inherit; }
+  .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .preview { margin-top: 16px; padding: 16px; background: #f9fafb; border-radius: 6px; text-align: center; }
+  .preview img { max-height: 80px; }
+  .toast { position: fixed; bottom: 20px; right: 20px; background: #111827; color: white; padding: 12px 20px; border-radius: 6px; font-size: 14px; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  .toast.show { opacity: 1; } .toast.error { background: #dc2626; } .toast.success { background: #059669; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Sistema de Atribuição de Aulas</h1>
+  <nav>
+    <a href="cadastros.html">Cadastros</a>
+    <a href="atribuicoes.html">Atribuições</a>
+    <a href="configuracoes.html" class="active">Configurações</a>
+    <a href="relatorio.html">Relatório</a>
+    <a href="professor.html">DACA</a>
+    <a href="#" id="logout">Sair</a>
+  </nav>
+</header>
+
+<div class="container">
+  <div class="card">
+    <h2>Dados do cabeçalho (aparecem no topo do DACA)</h2>
+
+    <label>Nome da Prefeitura</label>
+    <input id="cfg-prefeitura" />
+
+    <label>Nome da Secretaria</label>
+    <input id="cfg-secretaria" />
+
+    <label>Endereço completo</label>
+    <input id="cfg-endereco" />
+
+    <label>Telefone(s)</label>
+    <input id="cfg-telefone" />
+
+    <label>E-mail</label>
+    <input id="cfg-email" />
+
+    <label>URL do brasão (link direto para uma imagem)</label>
+    <input id="cfg-logo" placeholder="https://exemplo.com/brasao.png" />
+
+    <div class="preview" id="preview-logo">
+      <span style="color:var(--muted);font-size:13px;">Pré-visualização do brasão</span>
+    </div>
+
+    <div style="margin-top:20px; display:flex; gap:10px;">
+      <button class="btn btn-primary" onclick="salvar()">Salvar configurações</button>
+      <button class="btn" style="background:#e5e7eb;" onclick="carregar()">Recarregar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://dflzprsopnwgobcxuqfu.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_HAMF9aaI6tEtztq4pXAVPw_PM_9wyad';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const $ = (id) => document.getElementById(id);
+function toast(msg, tipo = '') {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (tipo ? ' ' + tipo : '');
+  setTimeout(() => t.className = 'toast', 2500);
+}
+async function requireLogin() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) { window.location.href = 'index.html'; return null; }
+  return session;
+}
+async function logout() {
+  await supabaseClient.auth.signOut();
+  window.location.href = 'index.html';
+}
+
+async function carregar() {
+  const { data, error } = await supabaseClient.from('daca_settings').select('*').eq('id', 1).maybeSingle();
+  if (error) return toast(error.message, 'error');
+  if (!data) return;
+
+  $('cfg-prefeitura').value = data.prefeitura || '';
+  $('cfg-secretaria').value = data.secretaria || '';
+  $('cfg-endereco').value = data.endereco || '';
+  $('cfg-telefone').value = data.telefone || '';
+  $('cfg-email').value = data.email || '';
+  $('cfg-logo').value = data.logo_url || '';
+  atualizarPreview(data.logo_url);
+}
+
+function atualizarPreview(url) {
+  const p = $('preview-logo');
+  if (url && url.trim()) {
+    p.innerHTML = `<img src="${url}" alt="Brasão" onerror="this.parentNode.innerHTML='<span style=&quot;color:#dc2626;font-size:13px&quot;>Não foi possível carregar a imagem</span>'">`;
+  } else {
+    p.innerHTML = '<span style="color:var(--muted);font-size:13px;">Pré-visualização do brasão</span>';
+  }
+}
+
+async function salvar() {
+  const payload = {
+    id: 1,
+    prefeitura: $('cfg-prefeitura').value.trim(),
+    secretaria: $('cfg-secretaria').value.trim(),
+    endereco: $('cfg-endereco').value.trim(),
+    telefone: $('cfg-telefone').value.trim(),
+    email: $('cfg-email').value.trim(),
+    logo_url: $('cfg-logo').value.trim() || null,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabaseClient.from('daca_settings').upsert(payload, { onConflict: 'id' });
+  if (error) return toast(error.message, 'error');
+  toast('Configurações salvas', 'success');
+  atualizarPreview(payload.logo_url);
+}
+
+$('cfg-logo').addEventListener('input', (e) => atualizarPreview(e.target.value));
+
+(async () => {
+  const session = await requireLogin();
+  if (!session) return;
+  $('logout').onclick = (e) => { e.preventDefault(); logout(); };
+  carregar();
+})();
+</script>
+</body>
+</html>

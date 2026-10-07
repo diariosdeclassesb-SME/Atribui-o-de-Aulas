@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Relatório Geral — Sistema de Atribuição de Aulas</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root { --primary: #2563eb; --primary-dark: #1e40af; --bg: #f3f4f6; --card: #fff; --border: #e5e7eb; --text: #111827; --muted: #6b7280; }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: var(--bg); color: var(--text); }
+  header { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+  header h1 { font-size: 18px; margin: 0; }
+  header nav a { color: var(--text); text-decoration: none; margin-right: 16px; font-size: 14px; }
+  header nav a.active { color: var(--primary); font-weight: 600; }
+  .container { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  .filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  input, select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white; }
+  .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-secondary { background: #e5e7eb; color: #111; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  th { background: #f9fafb; font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; }
+  .right { text-align: right; }
+  .center { text-align: center; }
+  .empty { color: var(--muted); padding: 30px; text-align: center; }
+  .totais-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .totais-grid .item { background: #f9fafb; border-radius: 6px; padding: 12px 16px; }
+  .totais-grid .label { font-size: 11px; color: var(--muted); text-transform: uppercase; }
+  .totais-grid .valor { font-size: 22px; font-weight: 700; color: var(--primary); }
+
+  @media print {
+    @page { size: A4 landscape; margin: 10mm; }
+    header, .filtros, .no-print { display: none !important; }
+    body { background: #fff; }
+    .container { max-width: 100%; margin: 0; padding: 0; }
+    .card { border: none; padding: 0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Sistema de Atribuição de Aulas</h1>
+  <nav>
+    <a href="cadastros.html">Cadastros</a>
+    <a href="atribuicoes.html">Atribuições</a>
+    <a href="configuracoes.html">Configurações</a>
+    <a href="relatorio.html" class="active">Relatório</a>
+    <a href="professor.html">DACA</a>
+    <a href="#" id="logout">Sair</a>
+  </nav>
+</header>
+
+<div class="container">
+  <div class="card no-print">
+    <div class="filtros">
+      <div>
+        <label>Escola</label>
+        <input id="f-escola" placeholder="Filtrar por escola" />
+      </div>
+      <div>
+        <label>Período</label>
+        <select id="f-periodo">
+          <option value="">Todos</option>
+          <option>Manhã</option>
+          <option>Tarde</option>
+          <option>Noite</option>
+          <option>Integral</option>
+        </select>
+      </div>
+      <div>
+        <label>Professor</label>
+        <input id="f-professor" placeholder="Filtrar por nome" />
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-primary" onclick="carregarRelatorio()">Filtrar</button>
+        <button class="btn btn-secondary" onclick="limparFiltros()">Limpar</button>
+        <button class="btn btn-secondary" onclick="window.print()">Imprimir</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="text-align:center;margin:0 0 4px;font-size:16px;">Prefeitura Municipal de Santa Branca</h2>
+    <p style="text-align:center;color:var(--muted);margin:0 0 20px;font-size:13px;">Relatório Geral de Atribuições de Aulas — <span id="data-rel"></span></p>
+
+    <div class="totais-grid">
+      <div class="item">
+        <div class="label">Professores com atribuições</div>
+        <div class="valor" id="t-prof">0</div>
+      </div>
+      <div class="item">
+        <div class="label">Total de turmas atribuídas</div>
+        <div class="valor" id="t-turmas">0</div>
+      </div>
+      <div class="item">
+        <div class="label">Total de aulas</div>
+        <div class="valor" id="t-aulas">0</div>
+      </div>
+      <div class="item">
+        <div class="label">Escolas envolvidas</div>
+        <div class="valor" id="t-escolas">0</div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Professor</th>
+          <th>Disciplina</th>
+          <th>Escola Sede</th>
+          <th class="center">Turmas</th>
+          <th class="center">Aulas</th>
+          <th class="center">Escolas</th>
+        </tr>
+      </thead>
+      <tbody id="lista-rel">
+        <tr><td colspan="6" class="empty">Carregando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://dflzprsopnwgobcxuqfu.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_HAMF9aaI6tEtztq4pXAVPw_PM_9wyad';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const $ = (id) => document.getElementById(id);
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg; t.className = 'toast show';
+  setTimeout(() => t.className = 'toast', 2500);
+}
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+async function requireLogin() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) { window.location.href = 'index.html'; return null; }
+  return session;
+}
+async function logout() {
+  await supabaseClient.auth.signOut();
+  window.location.href = 'index.html';
+}
+
+async function carregarRelatorio() {
+  const escola = $('f-escola').value.trim() || null;
+  const periodo = $('f-periodo').value || null;
+  const professor = $('f-professor').value.trim() || null;
+
+  const { data, error } = await supabaseClient.rpc('get_relatorio_geral', {
+    p_escola: escola, p_periodo: periodo, p_professor: professor,
+  });
+  if (error) return toast(error.message);
+
+  const linhas = data || [];
+  $('lista-rel').innerHTML = linhas.length
+    ? linhas.map(r => `<tr>
+        <td>${esc(r.teacher_name)}</td>
+        <td>${esc(r.discipline_name || '—')}</td>
+        <td>${esc(r.escola_sede)}</td>
+        <td class="center">${r.total_turmas}</td>
+        <td class="center">${r.total_aulas}</td>
+        <td class="center">${r.escolas_distintas}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="6" class="empty">Nenhum registro encontrado.</td></tr>';
+
+  // Totais gerais
+  $('t-prof').textContent = linhas.length;
+  $('t-turmas').textContent = linhas.reduce((s, r) => s + Number(r.total_turmas), 0);
+  $('t-aulas').textContent = linhas.reduce((s, r) => s + Number(r.total_aulas), 0);
+  $('t-escolas').textContent = new Set(linhas.map(r => r.escola_sede).filter(e => e !== '—')).size;
+
+  $('data-rel').textContent = new Date().toLocaleDateString('pt-BR');
+}
+
+function limparFiltros() {
+  $('f-escola').value = ''; $('f-periodo').value = ''; $('f-professor').value = '';
+  carregarRelatorio();
+}
+
+(async () => {
+  const session = await requireLogin();
+  if (!session) return;
+  $('logout').onclick = (e) => { e.preventDefault(); logout(); };
+  carregarRelatorio();
+})();
+</script>
+</body>
+</html>
