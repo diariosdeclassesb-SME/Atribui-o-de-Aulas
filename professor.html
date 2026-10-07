@@ -7,11 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { box-sizing: border-box; }
-  body {
-    font-family: Arial, Helvetica, sans-serif;
-    margin: 0; background: #e5e7eb; color: #111;
-    font-size: 11px;
-  }
+  body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #e5e7eb; color: #111; font-size: 11px; }
   header.app-header {
     background: #fff; border-bottom: 1px solid #d1d5db;
     padding: 10px 20px; display: flex; justify-content: space-between;
@@ -23,6 +19,17 @@
   }
   header.app-header nav a.active { color: #2563eb; font-weight: 700; }
 
+  .tabs-page {
+    background: #fff; padding: 0 20px; display: flex; gap: 4px;
+    border-bottom: 1px solid #d1d5db;
+  }
+  .tabs-page button {
+    background: none; border: none; padding: 10px 16px; cursor: pointer;
+    font-size: 13px; color: #6b7280; border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+  }
+  .tabs-page button.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 700; }
+
   .toolbar {
     background: #fff; padding: 10px 20px; border-bottom: 1px solid #d1d5db;
     display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
@@ -32,206 +39,138 @@
     padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 4px;
     font-size: 13px;
   }
-  .btn {
-    padding: 7px 14px; border: none; border-radius: 4px;
-    cursor: pointer; font-size: 13px; font-weight: 600;
-  }
+  .btn { padding: 7px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; }
   .btn-primary { background: #2563eb; color: #fff; }
   .btn-primary:hover { background: #1e40af; }
   .btn-secondary { background: #e5e7eb; color: #111; }
-  .btn-secondary:hover { background: #d1d5db; }
   .btn-success { background: #059669; color: #fff; }
   .btn-success:hover { background: #047857; }
+  .btn-danger { background: #dc2626; color: #fff; }
+  .btn-danger:hover { background: #b91c1c; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+  .view { display: none; }
+  .view.active { display: block; }
 
   /* =============== DOCUMENTO =============== */
   .doc-wrap { padding: 20px 0; display: flex; justify-content: center; }
   .doc {
-    background: #fff;
-    width: 297mm;
-    min-height: 210mm;
+    background: #fff; width: 297mm; min-height: 210mm;
     padding: 6mm 8mm;
     box-shadow: 0 2px 12px rgba(0,0,0,.15);
     color: #000;
   }
 
-  /* Cabeçalho */
   .doc-cabecalho {
     display: flex; justify-content: space-between; align-items: flex-start;
     border-bottom: 2px solid #000; padding-bottom: 4px;
   }
-  .doc-cabecalho .esq {
-    display: flex; gap: 10px; align-items: center; flex: 1;
-  }
+  .doc-cabecalho .esq { display: flex; gap: 10px; align-items: center; flex: 1; }
   .brasao {
     width: 55px; height: 55px; flex-shrink: 0;
-    border: 1px solid #999;
     display: flex; align-items: center; justify-content: center;
     font-size: 8px; color: #666; text-align: center; line-height: 1.2;
-    background: #f9fafb;
+    background: #f9fafb; border: 1px solid #ddd;
   }
   .brasao img { max-width: 100%; max-height: 100%; }
-  .doc-cabecalho .titulo {
-    text-align: center; line-height: 1.3; flex: 1;
-  }
+  .doc-cabecalho .titulo { text-align: center; line-height: 1.3; flex: 1; }
   .doc-cabecalho .titulo .pref { font-weight: 700; font-size: 11px; letter-spacing: .3px; }
   .doc-cabecalho .titulo .sec { font-weight: 700; font-size: 11px; }
   .doc-cabecalho .titulo .end,
   .doc-cabecalho .titulo .tel { font-size: 8.5px; }
   .doc-cabecalho .dir {
-    text-align: right;
-    font-size: 11px; font-weight: 700; line-height: 1.3;
+    text-align: right; font-size: 11px; font-weight: 700; line-height: 1.3;
     flex-shrink: 0;
   }
   .doc-cabecalho .dir .ano { font-size: 14px; display: block; }
 
-  /* Bloco de identificação 1–13 */
   .info-grid {
     display: grid;
     grid-template-columns: 2.3fr 1.1fr 0.9fr 1.1fr;
-    border: 1px solid #000;
-    border-top: none;
-    margin-top: 0;
+    border: 1px solid #000; border-top: none;
   }
   .info-grid .cell {
-    border-right: 1px solid #000;
-    border-bottom: 1px solid #000;
-    padding: 2px 5px;
-    font-size: 9px;
-    min-height: 18px;
-    line-height: 1.3;
+    border-right: 1px solid #000; border-bottom: 1px solid #000;
+    padding: 2px 5px; font-size: 9px; min-height: 18px; line-height: 1.3;
   }
   .info-grid .cell:nth-child(4n) { border-right: none; }
   .info-grid .cell .num { font-weight: 700; }
   .info-grid .row-last { border-bottom: none; }
 
-  /* Inputs editáveis dentro do documento */
   .field-doc {
-    border: none;
-    background: transparent;
-    font-family: inherit;
-    font-size: 9px;
-    padding: 0 2px;
-    width: 100%;
-    color: #000;
-    font-weight: 400;
+    border: none; background: transparent; font-family: inherit;
+    font-size: 9px; padding: 0 2px; width: 100%; color: #000; font-weight: 400;
   }
-  .field-doc:focus {
-    background: #fef3c7;
-    outline: 1px solid #f59e0b;
-  }
+  .field-doc:focus { background: #fef3c7; outline: 1px solid #f59e0b; }
   .field-doc.auto { background: #f3f4f6; }
   .field-doc.auto:focus { background: #fef3c7; }
 
-  /* Tabela de blocos I / II / III */
   table.daca {
     width: 100%; border-collapse: collapse; margin-top: 4px;
-    font-size: 9px;
-    table-layout: fixed;
+    font-size: 9px; table-layout: fixed;
   }
-  table.daca th, table.daca td {
-    border: 1px solid #000;
-    padding: 1px 3px;
-    vertical-align: middle;
-  }
+  table.daca th, table.daca td { border: 1px solid #000; padding: 1px 3px; vertical-align: middle; }
   table.daca th {
     background: #f3f4f6; font-weight: 700; text-align: center;
-    font-size: 8.5px;
-    line-height: 1.15;
+    font-size: 8.5px; line-height: 1.15;
   }
   .bloco-label {
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    text-align: center;
-    font-weight: 700;
-    font-size: 9px;
-    padding: 6px 1px !important;
-    width: 20px;
-    letter-spacing: 1px;
+    writing-mode: vertical-rl; transform: rotate(180deg);
+    text-align: center; font-weight: 700; font-size: 9px;
+    padding: 6px 1px !important; width: 20px; letter-spacing: 1px;
   }
-  .col-escola { width: 90px; }
-  .col-turma { width: 30px; }
-  .col-turmas { width: auto; }
-  .col-per { width: 16px; text-align: center; font-size: 8.5px; }
-  .col-situacao { width: 32px; text-align: center; }
-  .col-sem { width: 30px; text-align: center; }
-  .col-mes { width: 40px; text-align: center; }
-  .col-assin { width: 80px; text-align: center; }
-
   .sub-header th { background: #e5e7eb; font-size: 7.5px; }
-
-  .sec-titulo {
-    background: #f3f4f6; text-align: center; font-weight: 700;
-    font-size: 9px; padding: 2px;
-  }
+  .sec-titulo { background: #f3f4f6; text-align: center; font-weight: 700; font-size: 9px; padding: 2px; }
+  .col-per { width: 16px; text-align: center; font-size: 8.5px; }
 
   .field-edit {
     width: 100%; border: none; background: transparent;
-    font-size: 9px; text-align: center; padding: 0;
-    font-family: inherit;
+    font-size: 9px; text-align: center; padding: 0; font-family: inherit;
   }
-  .field-edit:focus {
-    background: #fef3c7; outline: 1px solid #f59e0b;
-  }
+  .field-edit:focus { background: #fef3c7; outline: 1px solid #f59e0b; }
   .field-edit::-webkit-outer-spin-button,
-  .field-edit::-webkit-inner-spin-button {
-    -webkit-appearance: none; margin: 0;
-  }
+  .field-edit::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .field-edit[type=number] { -moz-appearance: textfield; }
 
   .assinatura-linha { border-bottom: 1px solid #000; height: 12px; }
 
-  /* Rodapé ATA */
   .ata-box {
-    border: 1px solid #000;
-    border-top: none;
-    padding: 4px 8px;
-    font-size: 8px;
-    line-height: 1.35;
-    text-align: justify;
-    min-height: 90px;
+    border: 1px solid #000; border-top: none; padding: 4px 8px;
+    font-size: 8px; line-height: 1.35; text-align: justify; min-height: 90px;
   }
   .ata-box .ata-label { font-weight: 700; }
   .ata-box:focus { outline: 2px solid #f59e0b; outline-offset: -2px; }
 
-  /* Assinaturas finais */
   .assinaturas-finais {
-    display: grid; grid-template-columns: 1fr 1fr;
-    gap: 30px;
-    margin-top: 20px;
-    padding: 0 20px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 30px;
+    margin-top: 20px; padding: 0 20px;
   }
   .assinaturas-finais .item { text-align: center; }
-  .assinaturas-finais .linha {
-    border-top: 1px solid #000;
-    margin-bottom: 3px;
-    height: 1px;
-  }
-  .assinaturas-finais .rotulo {
-    font-size: 9px; font-weight: 700; letter-spacing: .5px;
-  }
+  .assinaturas-finais .linha { border-top: 1px solid #000; margin-bottom: 3px; height: 1px; }
+  .assinaturas-finais .rotulo { font-size: 9px; font-weight: 700; letter-spacing: .5px; }
 
-  /* Impressão */
+  /* Lista de DACAs salvas */
+  .daca-list { max-width: 1100px; margin: 20px auto; padding: 0 16px; }
+  .daca-list table { width: 100%; background: #fff; border-radius: 8px; overflow: hidden; font-size: 13px; }
+  .daca-list th, .daca-list td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; }
+  .daca-list th { background: #f9fafb; font-size: 12px; text-transform: uppercase; color: #6b7280; }
+  .daca-list tr:last-child td { border-bottom: none; }
+  .daca-list tr:hover td { background: #f9fafb; }
+
   @media print {
     @page { size: A4 landscape; margin: 5mm; }
     body { background: #fff; font-size: 10px; }
-    header.app-header, .toolbar, .no-print { display: none !important; }
+    header.app-header, .toolbar, .tabs-page, .no-print { display: none !important; }
     .doc-wrap { padding: 0; display: block; }
-    .doc {
-      box-shadow: none; width: 100%; min-height: 0;
-      padding: 0;
-    }
-    .field-edit:focus,
-    .field-doc:focus,
-    .ata-box:focus { background: transparent; outline: none; }
+    .doc { box-shadow: none; width: 100%; min-height: 0; padding: 0; }
+    .field-edit:focus, .field-doc:focus, .ata-box:focus { background: transparent; outline: none; }
     .field-doc.auto { background: transparent; }
   }
 
   .toast {
-    position: fixed; bottom: 20px; right: 20px;
-    background: #111827; color: #fff;
+    position: fixed; bottom: 20px; right: 20px; background: #111827; color: #fff;
     padding: 10px 18px; border-radius: 6px; font-size: 13px;
-    opacity: 0; transition: opacity .3s; pointer-events: none;
-    z-index: 9999;
+    opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 9999;
   }
   .toast.show { opacity: 1; }
   .toast.error { background: #dc2626; }
@@ -245,35 +184,95 @@
   <nav>
     <a href="cadastros.html">Cadastros</a>
     <a href="atribuicoes.html">Atribuições</a>
+    <a href="configuracoes.html">Configurações</a>
+    <a href="relatorio.html">Relatório</a>
     <a href="professor.html" class="active">DACA</a>
     <a href="#" id="logout">Sair</a>
   </nav>
 </header>
 
-<div class="toolbar no-print">
-  <div>
-    <label>Professor:</label>
-    <select id="seletor-professor" style="min-width:280px;">
-      <option value="">Carregando...</option>
-    </select>
-  </div>
-  <div>
-    <label>Ano do documento:</label>
-    <input type="number" id="ano-doc" value="2026" style="width:80px;" />
-  </div>
-  <div>
-    <label>Data da Atribuição:</label>
-    <input type="date" id="data-atribuicao" />
-  </div>
-  <button class="btn btn-primary" onclick="window.print()">Imprimir</button>
-  <button class="btn btn-success" onclick="salvarTudo()">Salvar</button>
+<div class="tabs-page no-print">
+  <button data-view="gerar" class="active">Gerar DACA</button>
+  <button data-view="consultar">Consultar DACAs salvas</button>
 </div>
 
-<div class="doc-wrap">
-  <div class="doc" id="doc">
-    <div style="text-align:center;padding:40px;color:#6b7280;font-size:13px;">
-      Selecione um professor para carregar o documento.
+<!-- ============================ VIEW: GERAR ============================ -->
+<div class="view active" id="view-gerar">
+  <div class="toolbar no-print">
+    <div>
+      <label>Professor:</label>
+      <select id="seletor-professor" style="min-width:280px;">
+        <option value="">Carregando...</option>
+      </select>
     </div>
+    <div>
+      <label>Ano do documento:</label>
+      <input type="number" id="ano-doc" value="2026" style="width:80px;" />
+    </div>
+    <div>
+      <label>Data da Atribuição:</label>
+      <input type="date" id="data-atribuicao" />
+    </div>
+    <button class="btn btn-primary" onclick="window.print()">Imprimir</button>
+    <button class="btn btn-success" onclick="salvarDaca()">Salvar DACA</button>
+  </div>
+
+  <div class="doc-wrap">
+    <div class="doc" id="doc">
+      <div style="text-align:center;padding:40px;color:#6b7280;font-size:13px;">
+        Selecione um professor para carregar o documento.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================ VIEW: CONSULTAR ============================ -->
+<div class="view" id="view-consultar">
+  <div class="toolbar no-print">
+    <div>
+      <label>Professor:</label>
+      <select id="filtro-prof" style="min-width:240px;">
+        <option value="">Todos</option>
+      </select>
+    </div>
+    <div>
+      <label>Data da atribuição:</label>
+      <input type="date" id="filtro-data" />
+    </div>
+    <button class="btn btn-primary" onclick="carregarDacas()">Filtrar</button>
+    <button class="btn btn-secondary" onclick="limparFiltrosConsulta()">Limpar</button>
+  </div>
+
+  <div class="daca-list">
+    <table>
+      <thead>
+        <tr>
+          <th>Professor</th>
+          <th>Disciplina</th>
+          <th>Data da Atribuição</th>
+          <th>Ano</th>
+          <th>Unidade Sede</th>
+          <th style="width:200px">Ações</th>
+        </tr>
+      </thead>
+      <tbody id="lista-dacas">
+        <tr><td colspan="6" style="text-align:center;color:#6b7280;padding:30px;">Carregando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal para visualizar DACA salva -->
+<div id="modal-daca" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9998;overflow:auto;padding:20px;">
+  <div style="background:#fff;max-width:1400px;margin:0 auto;border-radius:8px;padding:16px;">
+    <div class="no-print" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h2 style="margin:0;font-size:16px;">DACA salva (modo somente leitura)</h2>
+      <div>
+        <button class="btn btn-primary" onclick="window.print()">Imprimir</button>
+        <button class="btn btn-secondary" onclick="fecharModal()">Fechar</button>
+      </div>
+    </div>
+    <div id="modal-doc-content"></div>
   </div>
 </div>
 
@@ -302,9 +301,12 @@ function esc(s) {
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
 }
-function dataHojeBR() {
-  const d = new Date();
-  return d.toLocaleDateString('pt-BR');
+function dataHojeBR() { return new Date().toLocaleDateString('pt-BR'); }
+function dataBR(iso) {
+  if (!iso) return '';
+  // iso = 'YYYY-MM-DD'
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
 }
 
 // ============================================================
@@ -321,30 +323,51 @@ async function logout() {
 }
 
 // ============================================================
+// NAVEGAÇÃO ENTRE ABAS
+// ============================================================
+document.querySelectorAll('.tabs-page button').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tabs-page button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    btn.classList.add('active');
+    $('view-' + btn.dataset.view).classList.add('active');
+    if (btn.dataset.view === 'consultar') carregarDacas();
+  };
+});
+
+// ============================================================
 // ESTADO
 // ============================================================
 let professores = [];
 let dadosDaca = { titular: [], carga: [], deixou: [], assumiu: [] };
 let manuais = {};
-let dadosProf = {}; // dados de teacher_daca_data
+let dadosProf = {};
 let teacherAtualId = null;
+let settings = {};
+let ataTextoAtual = '';
 
 // ============================================================
 // CARREGAMENTO INICIAL
 // ============================================================
+async function carregarSettings() {
+  const { data, error } = await supabaseClient.from('daca_settings').select('*').eq('id', 1).maybeSingle();
+  if (error) { console.warn('Erro settings:', error.message); return; }
+  settings = data || {};
+}
+
 async function carregarProfessores() {
   const { data, error } = await supabaseClient
     .from('teachers')
-    .select('id, full_name, disciplines(name)')
+    .select('id, full_name, rg, cpf, disciplines(name)')
     .order('full_name');
   if (error) return toast(error.message, 'error');
 
   professores = data || [];
-  $('seletor-professor').innerHTML =
-    '<option value="">Selecione...</option>' +
-    professores.map(p =>
-      `<option value="${p.id}">${esc(p.full_name)} — ${esc(p.disciplines?.name || 'sem disciplina')}</option>`
-    ).join('');
+  const opts = professores.map(p =>
+    `<option value="${p.id}">${esc(p.full_name)} — ${esc(p.disciplines?.name || 'sem disciplina')}</option>`
+  ).join('');
+  $('seletor-professor').innerHTML = '<option value="">Selecione...</option>' + opts;
+  $('filtro-prof').innerHTML = '<option value="">Todos</option>' + opts;
 }
 
 async function carregarDadosProf(teacherId) {
@@ -376,7 +399,7 @@ async function carregarManuais(teacherId) {
 }
 
 // ============================================================
-// CARREGAMENTO DO DOCUMENTO
+// CARREGAR DACA (modo gerar)
 // ============================================================
 async function carregarDaca(teacherId) {
   if (!teacherId) {
@@ -401,7 +424,7 @@ async function carregarDaca(teacherId) {
 }
 
 // ============================================================
-// RENDERIZAÇÃO
+// RENDERIZAÇÃO DO DOCUMENTO (modo edição)
 // ============================================================
 function renderizar() {
   const prof = professores.find(p => p.id === teacherAtualId);
@@ -409,47 +432,93 @@ function renderizar() {
 
   const ano = $('ano-doc').value || '2026';
   const dataAtrib = $('data-atribuicao').value
-    ? new Date($('data-atribuicao').value + 'T00:00:00').toLocaleDateString('pt-BR')
+    ? dataBR($('data-atribuicao').value)
     : dataHojeBR();
 
-  // Unidade sede = escola com mais turmas atribuídas
-  const contagemEscolas = {};
+  const unidadeSede = calcularUnidadeSede(dadosDaca);
+
+  // Se há texto de ATA salvo, usa; senão, usa o padrão
+  if (!ataTextoAtual) {
+    ataTextoAtual = gerarAtaPadrao(ano);
+  }
+
+  $('doc').innerHTML = renderDocumento({
+    settings,
+    professor: prof,
+    dadosProf,
+    dadosDaca,
+    manuais,
+    ano,
+    dataAtrib,
+    unidadeSede,
+    ataTexto: ataTextoAtual,
+    editavel: true,
+  });
+}
+
+function calcularUnidadeSede(dd) {
+  const contagem = {};
   ['titular', 'carga', 'assumiu'].forEach(b => {
-    dadosDaca[b].forEach(r => {
-      contagemEscolas[r.school_name] = (contagemEscolas[r.school_name] || 0) + 1;
+    dd[b].forEach(r => {
+      contagem[r.school_name] = (contagem[r.school_name] || 0) + 1;
     });
   });
-  const unidadeSede = Object.keys(contagemEscolas).sort(
-    (a, b) => contagemEscolas[b] - contagemEscolas[a]
-  )[0] || '—';
+  return Object.keys(contagem).sort((a, b) => contagem[b] - contagem[a])[0] || '—';
+}
 
-  const linhasTitular = renderLinhas(dadosDaca.titular, 'titular', false);
-  const linhasCarga = renderLinhas(dadosDaca.carga, 'carga', false);
-  const linhasDeixou = renderLinhas(dadosDaca.deixou, 'deixou', true);
-  const linhasAssumiu = renderLinhas(dadosDaca.assumiu, 'assumiu', true);
+function gerarAtaPadrao(ano) {
+  return `Aos <strong>dezessete</strong> dias do mês de <strong>dezembro</strong> de <strong>dois mil e vinte e cinco</strong>, a partir das <strong>nove horas e trinta minutos</strong>, reuniram-se os servidores da Secretaria Municipal de Educação sob a presidência da Secretária de Educação <strong>Senhora Alexandra Cristina da Silva Fernandes Marques</strong>, a fim de proceder à <strong>Sessão de Atribuição de Classes e Aulas do ano letivo de ${ano}</strong>, conforme Edital nº 11/2025 – SME/CMSB, publicado no Diário Oficial do Município de <strong>25/11/2025</strong>.`;
+}
 
-  const totalTitular = somarAulasMes('titular');
-  const totalCarga = somarAulasMes('carga');
+function renderDocumento(ctx) {
+  const { settings, professor, dadosProf: dp, dadosDaca: dd, manuais: mm, ano, dataAtrib, unidadeSede, ataTexto, editavel } = ctx;
 
-  const rowspanTitular = Math.max(dadosDaca.titular.length, 1) + 1;
-  const rowspanCarga = Math.max(dadosDaca.carga.length, 1) + 1;
-  const rowspanSubst = Math.max(dadosDaca.deixou.length, 1) + Math.max(dadosDaca.assumiu.length, 1) + 2;
+  const readOnlyAttr = editavel ? '' : 'readonly';
+  const inputTag = (id, valor, campo, classe) => editavel
+    ? `<input class="field-doc ${classe||''}" id="${id}" data-campo="${campo}" value="${esc(valor||'')}">`
+    : `<span style="font-size:9px;">${esc(valor || '—')}</span>`;
 
-  // Values dos campos do professor
-  const dp = dadosProf;
-  const v = (x) => esc(x ?? '');
+  const selectTag = (id, valor, campo, opcoes) => {
+    if (!editavel) return `<span style="font-size:9px;">${esc(valor || '—')}</span>`;
+    return `<select class="field-doc" id="${id}" data-campo="${campo}">
+      <option value="">—</option>
+      ${opcoes.map(o => `<option value="${o}" ${valor === o ? 'selected' : ''}>${o}</option>`).join('')}
+    </select>`;
+  };
 
-  $('doc').innerHTML = `
+  const linhasTitular = renderLinhas(dd.titular, 'titular', false, mm, editavel);
+  const linhasCarga = renderLinhas(dd.carga, 'carga', false, mm, editavel);
+  const linhasDeixou = renderLinhas(dd.deixou, 'deixou', true, mm, editavel);
+  const linhasAssumiu = renderLinhas(dd.assumiu, 'assumiu', true, mm, editavel);
+
+  const totalTitular = somarAulasMes(dd.titular, 'titular', mm);
+  const totalCarga = somarAulasMes(dd.carga, 'carga', mm);
+
+  const rowspanTitular = Math.max(dd.titular.length, 1) + 1;
+  const rowspanCarga = Math.max(dd.carga.length, 1) + 1;
+  const rowspanSubst = Math.max(dd.deixou.length, 1) + Math.max(dd.assumiu.length, 1) + 2;
+
+  // Cabeçalho: do settings ou fallback
+  const pref = settings.prefeitura || 'PREFEITURA MUNICIPAL DE SANTA BRANCA';
+  const sec = settings.secretaria || 'SECRETARIA MUNICIPAL DE EDUCAÇÃO';
+  const end = settings.endereco || 'Rua Independência, s/nº - Centro - Santa Branca – São Paulo – CEP: 12.380-000';
+  const tel = settings.telefone || 'Tel: (12) 3972-1686 - 3972-3061';
+  const mail = settings.email || 'semebranca@gmail.com';
+  const logo = settings.logo_url;
+
+  const logoHtml = logo
+    ? `<img src="${esc(logo)}" alt="Brasão" onerror="this.style.display='none';this.parentNode.innerHTML='BRASÃO';">`
+    : 'BRASÃO';
+
+  return `
     <div class="doc-cabecalho">
       <div class="esq">
-        <div class="brasao">
-          <img src="brasao.png" alt="" onerror="this.style.display='none';this.parentNode.innerHTML='BRASÃO';" />
-        </div>
+        <div class="brasao">${logoHtml}</div>
         <div class="titulo">
-          <div class="pref">PREFEITURA MUNICIPAL DE SANTA BRANCA</div>
-          <div class="sec">SECRETARIA MUNICIPAL DE EDUCAÇÃO</div>
-          <div class="end">Rua Independência, s/nº - Centro - Santa Branca – São Paulo – CEP: 12.380-000</div>
-          <div class="tel">Tel: (12) 3972-1686 - 3972-3061 &nbsp;&nbsp; e-mail: semebranca@gmail.com</div>
+          <div class="pref">${esc(pref)}</div>
+          <div class="sec">${esc(sec)}</div>
+          <div class="end">${esc(end)}</div>
+          <div class="tel">${esc(tel)} &nbsp;&nbsp; e-mail: ${esc(mail)}</div>
         </div>
       </div>
       <div class="dir">
@@ -461,57 +530,52 @@ function renderizar() {
     <div class="info-grid">
       <div class="cell">
         <span class="num">1- Unidade Sede de Controle de Frequência:</span>
-        <input class="field-doc auto" id="f-unidade" value="${v(unidadeSede)}">
+        ${inputTag('f-unidade', unidadeSede, 'unidade_sede', 'auto')}
       </div>
       <div class="cell">
-        <span class="num">2- Data da Atribuição:</span> <span>${esc(dataAtrib)}</span>
+        <span class="num">2- Data da Atribuição:</span> <span style="font-size:9px;">${esc(dataAtrib)}</span>
       </div>
       <div class="cell">
         <span class="num">3- PEB:</span>
-        <select class="field-doc" id="f-peb">
-          <option value="">—</option>
-          <option value="PEB I" ${dp.peb === 'PEB I' ? 'selected' : ''}>PEB I</option>
-          <option value="PEB II" ${dp.peb === 'PEB II' ? 'selected' : ''}>PEB II</option>
-          <option value="PEB III" ${dp.peb === 'PEB III' ? 'selected' : ''}>PEB III</option>
-        </select>
+        ${selectTag('f-peb', dp.peb, 'peb', ['PEB I', 'PEB II', 'PEB III'])}
       </div>
       <div class="cell">
-        <span class="num">4- Disciplina:</span> <span>${esc(prof.disciplines?.name || '—')}</span>
+        <span class="num">4- Disciplina:</span> <span style="font-size:9px;">${esc(professor.disciplines?.name || '—')}</span>
       </div>
 
       <div class="cell">
         <span class="num">5- Classificação:</span>
-        <input class="field-doc" id="f-classificacao" value="${v(dp.classificacao)}">
+        ${inputTag('f-classificacao', dp.classificacao, 'classificacao')}
       </div>
       <div class="cell">
         <span class="num">6- Nome do Professor:</span>
-        <input class="field-doc auto" id="f-nome" value="${v(prof.full_name)}">
+        ${inputTag('f-nome', professor.full_name, 'prof_nome', 'auto')}
       </div>
       <div class="cell">
         <span class="num">7- RG:</span>
-        <input class="field-doc" id="f-rg" value="${v(dp.rg)}">
+        ${editavel
+          ? `<input class="field-doc" id="f-rg" data-campo="rg" value="${esc(professor.rg || dp.rg || '')}">`
+          : `<span style="font-size:9px;">${esc(professor.rg || dp.rg || '—')}</span>`}
       </div>
       <div class="cell">
         <span class="num">8- CPF:</span>
-        <input class="field-doc" id="f-cpf" value="${v(dp.cpf)}">
+        ${editavel
+          ? `<input class="field-doc" id="f-cpf" data-campo="cpf" value="${esc(professor.cpf || dp.cpf || '')}">`
+          : `<span style="font-size:9px;">${esc(professor.cpf || dp.cpf || '—')}</span>`}
       </div>
 
       <div class="cell">
         <span class="num">9- Jornada:</span>
-        <input class="field-doc" id="f-jornada" value="${v(dp.jornada)}">
+        ${inputTag('f-jornada', dp.jornada, 'jornada')}
       </div>
       <div class="cell">
         <span class="num">10- Categoria:</span>
-        <select class="field-doc" id="f-categoria">
-          <option value="">—</option>
-          <option value="Efetivo" ${dp.categoria === 'Efetivo' ? 'selected' : ''}>Efetivo</option>
-          <option value="Efetivo em Período Probatório" ${dp.categoria === 'Efetivo em Período Probatório' ? 'selected' : ''}>Efetivo em Período Probatório</option>
-        </select>
+        ${selectTag('f-categoria', dp.categoria, 'categoria', ['Efetivo', 'Efetivo em Período Probatório'])}
       </div>
       <div class="cell">
         <span class="num">11- Afastamento:</span>
-        <input class="field-doc" id="f-afastamento" list="lista-afastamento" value="${v(dp.afastamento)}">
-        <datalist id="lista-afastamento">
+        ${inputTag('f-afastamento', dp.afastamento, 'afastamento')}
+        ${editavel ? `<datalist id="lista-afastamento">
           <option value="Professor Mediador">
           <option value="Centro Técnico e Pedagógico">
           <option value="Vice Diretor">
@@ -519,44 +583,26 @@ function renderizar() {
           <option value="Secretário Adjunto de Educação">
           <option value="Secretário de Educação">
           <option value="Professor Auxiliar">
-        </datalist>
+        </datalist>` : ''}
       </div>
       <div class="cell">
         <span class="num">12- Carga Suplementar:</span>
-        <select class="field-doc" id="f-carga-sup">
-          <option value="">—</option>
-          <option value="Sim" ${dp.carga_suplementar === 'Sim' ? 'selected' : ''}>Sim</option>
-          <option value="Não" ${dp.carga_suplementar === 'Não' ? 'selected' : ''}>Não</option>
-        </select>
+        ${selectTag('f-carga-sup', dp.carga_suplementar, 'carga_suplementar', ['Sim', 'Não'])}
       </div>
 
       <div class="cell row-last" style="grid-column: 1 / 4;">
         <span class="num">13- Professor Excedente:</span>
-        <select class="field-doc" id="f-excedente" style="width:auto;">
-          <option value="">—</option>
-          <option value="Sim" ${dp.professor_excedente === 'Sim' ? 'selected' : ''}>Sim</option>
-          <option value="Não" ${dp.professor_excedente === 'Não' ? 'selected' : ''}>Não</option>
-          <option value="Parcial" ${dp.professor_excedente === 'Parcial' ? 'selected' : ''}>Parcial</option>
-        </select>
+        ${selectTag('f-excedente', dp.professor_excedente, 'professor_excedente', ['Sim', 'Não', 'Parcial'])}
       </div>
       <div class="cell row-last" style="border-right:none;border-bottom:none;"></div>
     </div>
 
     <table class="daca">
       <colgroup>
-        <col style="width:20px">
-        <col style="width:90px">
-        <col style="width:30px">
-        <col>
-        <col style="width:16px">
-        <col style="width:16px">
-        <col style="width:16px">
-        <col style="width:16px">
-        <col style="width:32px">
-        <col style="width:32px">
-        <col style="width:30px">
-        <col style="width:30px">
-        <col style="width:40px">
+        <col style="width:20px"><col style="width:90px"><col style="width:30px"><col>
+        <col style="width:16px"><col style="width:16px"><col style="width:16px"><col style="width:16px">
+        <col style="width:32px"><col style="width:32px">
+        <col style="width:30px"><col style="width:30px"><col style="width:40px">
         <col style="width:80px">
       </colgroup>
       <thead>
@@ -571,19 +617,12 @@ function renderizar() {
           <th rowspan="2">Assinatura</th>
         </tr>
         <tr class="sub-header">
-          <th>M</th>
-          <th>T</th>
-          <th>N</th>
-          <th>I</th>
-          <th>Deixou</th>
-          <th>Assumiu</th>
-          <th>1ª Sem</th>
-          <th>2ª Sem</th>
-          <th>Aulas do Mês</th>
+          <th>M</th><th>T</th><th>N</th><th>I</th>
+          <th>Deixou</th><th>Assumiu</th>
+          <th>1ª Sem</th><th>2ª Sem</th><th>Aulas do Mês</th>
         </tr>
       </thead>
       <tbody>
-        <!-- BLOCO I - TITULAR -->
         <tr>
           <td rowspan="${rowspanTitular}" class="bloco-label">I<br>Titular</td>
           ${linhasTitular || `<td colspan="13" style="text-align:center;color:#6b7280;">Nenhuma turma atribuída como Titular</td>`}
@@ -595,7 +634,6 @@ function renderizar() {
           <td style="text-align:center;font-weight:700;">${totalTitular}</td>
         </tr>
 
-        <!-- BLOCO II - CARGA SUPLEMENTAR -->
         <tr>
           <td rowspan="${rowspanCarga}" class="bloco-label">II<br>Carga<br>Suplem.</td>
           ${linhasCarga || `<td colspan="13" style="text-align:center;color:#6b7280;">Nenhuma turma em Carga Suplementar</td>`}
@@ -607,7 +645,6 @@ function renderizar() {
           <td style="text-align:center;font-weight:700;">${totalCarga}</td>
         </tr>
 
-        <!-- BLOCO III - SUBSTITUIÇÃO -->
         <tr>
           <td rowspan="${rowspanSubst}" class="bloco-label">III<br>Substituição</td>
           <td colspan="13" class="sec-titulo">Deixou as seguintes Classes:</td>
@@ -620,9 +657,9 @@ function renderizar() {
       </tbody>
     </table>
 
-    <div class="ata-box" contenteditable="true" id="ata-texto">
+    <div class="ata-box" ${editavel ? 'contenteditable="true"' : ''} id="ata-texto">
       <span class="ata-label">ATA:</span>
-      Aos <strong>dezessete</strong> dias do mês de <strong>dezembro</strong> de <strong>dois mil e vinte e cinco</strong>, a partir das <strong>nove horas e trinta minutos</strong>, reuniram-se os servidores da Secretaria Municipal de Educação sob a presidência da Secretária de Educação <strong>Senhora Alexandra Cristina da Silva Fernandes Marques</strong>, a fim de proceder à <strong>Sessão de Atribuição de Classes e Aulas do ano letivo de ${esc(ano)}</strong>, conforme Edital nº 11/2025 – SME/CMSB, publicado no Diário Oficial do Município de <strong>25/11/2025</strong>. <em>(clique aqui para editar o texto da ata)</em>
+      ${ataTexto}
     </div>
 
     <div class="assinaturas-finais">
@@ -642,12 +679,16 @@ function marcarX(periodo, letra) {
   return (periodo || '').charAt(0).toUpperCase() === letra ? 'X' : '';
 }
 
-function renderLinhas(lista, bloco, mostrarSituacao) {
+function renderLinhas(lista, bloco, mostrarSituacao, mm, editavel) {
   if (!lista || lista.length === 0) return '';
   return lista.map((r) => {
     const key = `${r.assignment_id}|${bloco}`;
-    const m = manuais[key] || { aulas_1sem: '', aulas_2sem: '', aulas_mes: '' };
-    const per = (r.class_period || '').charAt(0).toUpperCase();
+    const m = mm[key] || { aulas_1sem: '', aulas_2sem: '', aulas_mes: '' };
+    const val = (v) => v === null || v === undefined || v === '' ? '' : v;
+    const inputOuSpan = (campo, valor) => editavel
+      ? `<input class="field-edit" type="number" min="0" data-key="${key}" data-campo="${campo}" value="${val(valor)}">`
+      : `<span style="font-size:9px;">${val(valor) || ''}</span>`;
+
     return `
       <tr>
         <td>${esc(r.school_name)}</td>
@@ -661,56 +702,74 @@ function renderLinhas(lista, bloco, mostrarSituacao) {
           ? `<td style="text-align:center;">${bloco === 'deixou' ? 'X' : ''}</td>
              <td style="text-align:center;">${bloco === 'assumiu' ? 'X' : ''}</td>`
           : `<td></td><td></td>`}
-        <td><input class="field-edit" type="number" min="0"
-            data-key="${key}" data-campo="aulas_1sem" value="${m.aulas_1sem ?? ''}"></td>
-        <td><input class="field-edit" type="number" min="0"
-            data-key="${key}" data-campo="aulas_2sem" value="${m.aulas_2sem ?? ''}"></td>
-        <td><input class="field-edit" type="number" min="0"
-            data-key="${key}" data-campo="aulas_mes" value="${m.aulas_mes ?? ''}"></td>
+        <td>${inputOuSpan('aulas_1sem', m.aulas_1sem)}</td>
+        <td>${inputOuSpan('aulas_2sem', m.aulas_2sem)}</td>
+        <td>${inputOuSpan('aulas_mes', m.aulas_mes)}</td>
         <td><div class="assinatura-linha"></div></td>
       </tr>`;
   }).join('');
 }
 
-function somarAulasMes(bloco) {
-  return dadosDaca[bloco].reduce((s, r) => {
+function somarAulasMes(lista, bloco, mm) {
+  return lista.reduce((s, r) => {
     const key = `${r.assignment_id}|${bloco}`;
-    const m = manuais[key] || {};
+    const m = mm[key] || {};
     return s + (parseInt(m.aulas_mes) || 0);
   }, 0);
 }
 
 // ============================================================
-// SALVAR TUDO (dados do professor + aulas)
+// SALVAR DACA (snapshot completo)
 // ============================================================
-async function salvarTudo() {
+async function salvarDaca() {
   if (!teacherAtualId) return toast('Selecione um professor primeiro', 'error');
 
-  // 1. Salva dados do professor (teacher_daca_data)
-  const dados = {
-    teacher_id: teacherAtualId,
-    peb: $('f-peb')?.value || null,
-    classificacao: $('f-classificacao')?.value || null,
-    rg: $('f-rg')?.value || null,
-    cpf: $('f-cpf')?.value || null,
-    jornada: $('f-jornada')?.value || null,
-    categoria: $('f-categoria')?.value || null,
-    afastamento: $('f-afastamento')?.value || null,
-    carga_suplementar: $('f-carga-sup')?.value || null,
-    professor_excedente: $('f-excedente')?.value || null,
-    updated_at: new Date().toISOString(),
+  const prof = professores.find(p => p.id === teacherAtualId);
+  const ano = parseInt($('ano-doc').value, 10);
+  const dataAtrib = $('data-atribuicao').value || new Date().toISOString().slice(0, 10);
+  const ataTexto = $('ata-texto').innerHTML.replace(/^<span class="ata-label">ATA:<\/span>\s*/, '').trim();
+
+  // Lê os campos editáveis (podem ter sido alterados antes de salvar)
+  const dadosProfSnap = {
+    prof_nome: $('f-nome')?.value || prof.full_name,
+    prof_rg: $('f-rg')?.value || prof.rg || null,
+    prof_cpf: $('f-cpf')?.value || prof.cpf || null,
+    prof_peb: $('f-peb')?.value || null,
+    prof_classificacao: $('f-classificacao')?.value || null,
+    prof_jornada: $('f-jornada')?.value || null,
+    prof_categoria: $('f-categoria')?.value || null,
+    prof_afastamento: $('f-afastamento')?.value || null,
+    prof_carga_suplementar: $('f-carga-sup')?.value || null,
+    prof_professor_excedente: $('f-excedente')?.value || null,
+    prof_disciplina: prof.disciplines?.name || null,
   };
 
-  const { error: err1 } = await supabaseClient
-    .from('teacher_daca_data')
-    .upsert(dados, { onConflict: 'teacher_id' });
+  // 1. Atualiza teacher_daca_data com os valores editados (para próximas DACAs)
+  await supabaseClient.from('teacher_daca_data').upsert({
+    teacher_id: teacherAtualId,
+    peb: dadosProfSnap.prof_peb,
+    classificacao: dadosProfSnap.prof_classificacao,
+    rg: dadosProfSnap.prof_rg,
+    cpf: dadosProfSnap.prof_cpf,
+    jornada: dadosProfSnap.prof_jornada,
+    categoria: dadosProfSnap.prof_categoria,
+    afastamento: dadosProfSnap.prof_afastamento,
+    carga_suplementar: dadosProfSnap.prof_carga_suplementar,
+    professor_excedente: dadosProfSnap.prof_professor_excedente,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'teacher_id' });
 
-  if (err1) return toast('Erro dados professor: ' + err1.message, 'error');
+  // 2. Atualiza teachers com RG/CPF (para ficar sempre sincronizado)
+  if (dadosProfSnap.prof_rg || dadosProfSnap.prof_cpf) {
+    await supabaseClient.from('teachers').update({
+      rg: dadosProfSnap.prof_rg,
+      cpf: dadosProfSnap.prof_cpf,
+    }).eq('id', teacherAtualId);
+  }
 
-  // 2. Salva aulas manuais (daca_manual_fields)
+  // 3. Lê as aulas editadas
   const inputs = document.querySelectorAll('input.field-edit[data-key]');
   const agrupados = {};
-
   inputs.forEach(inp => {
     const key = inp.dataset.key;
     const campo = inp.dataset.campo;
@@ -719,36 +778,202 @@ async function salvarTudo() {
     agrupados[key][campo] = inp.value === '' ? null : parseInt(inp.value, 10);
   });
 
-  const registros = Object.values(agrupados).map(r => ({
-    teacher_id: teacherAtualId,
-    assignment_id: r.assignment_id,
-    bloco: r.bloco,
-    aulas_1sem: r.aulas_1sem ?? 0,
-    aulas_2sem: r.aulas_2sem ?? 0,
-    aulas_mes: r.aulas_mes ?? 0,
-    updated_at: new Date().toISOString(),
-  }));
+  // 4. Cria snapshot em daca_records
+  const unidadeSede = $('f-unidade')?.value || calcularUnidadeSede(dadosDaca);
 
-  if (registros.length > 0) {
-    const { error: err2 } = await supabaseClient
-      .from('daca_manual_fields')
-      .upsert(registros, { onConflict: 'teacher_id,assignment_id,bloco' });
-    if (err2) return toast('Erro aulas: ' + err2.message, 'error');
+  const { data: rec, error: errRec } = await supabaseClient
+    .from('daca_records')
+    .insert({
+      teacher_id: teacherAtualId,
+      data_atribuicao: dataAtrib,
+      ano_documento: ano,
+      unidade_sede: unidadeSede,
+      texto_ata: ataTexto,
+      header_prefeitura: settings.prefeitura,
+      header_secretaria: settings.secretaria,
+      header_endereco: settings.endereco,
+      header_telefone: settings.telefone,
+      header_email: settings.email,
+      header_logo_url: settings.logo_url,
+      ...dadosProfSnap,
+    })
+    .select()
+    .single();
+
+  if (errRec) return toast('Erro DACA: ' + errRec.message, 'error');
+
+  // 5. Snapshot das linhas (assignments + aulas)
+  const registrosLinhas = [];
+  Object.values(agrupados).forEach(a => {
+    const r = [...dadosDaca.titular, ...dadosDaca.carga, ...dadosDaca.deixou, ...dadosDaca.assumiu]
+      .find(x => x.assignment_id === a.assignment_id && x.bloco === a.bloco);
+    if (!r) return;
+    registrosLinhas.push({
+      daca_record_id: rec.id,
+      assignment_id: r.assignment_id,
+      bloco: a.bloco,
+      school_name: r.school_name,
+      class_name: r.class_name,
+      class_period: r.class_period,
+      discipline_name: r.discipline_name,
+      lesson_count: r.lesson_count,
+      aulas_1sem: a.aulas_1sem ?? 0,
+      aulas_2sem: a.aulas_2sem ?? 0,
+      aulas_mes: a.aulas_mes ?? 0,
+    });
+  });
+
+  if (registrosLinhas.length > 0) {
+    const { error: errLinhas } = await supabaseClient.from('daca_records_assignments').insert(registrosLinhas);
+    if (errLinhas) return toast('Erro linhas: ' + errLinhas.message, 'error');
   }
 
-  toast('Dados salvos com sucesso', 'success');
-  await Promise.all([
-    carregarManuais(teacherAtualId),
-    carregarDadosProf(teacherAtualId),
-  ]);
-  renderizar();
+  // 6. Salva também em daca_manual_fields para reuso
+  if (Object.keys(agrupados).length > 0) {
+    const regs = Object.values(agrupados).map(r => ({
+      teacher_id: teacherAtualId,
+      assignment_id: r.assignment_id,
+      bloco: r.bloco,
+      aulas_1sem: r.aulas_1sem ?? 0,
+      aulas_2sem: r.aulas_2sem ?? 0,
+      aulas_mes: r.aulas_mes ?? 0,
+      updated_at: new Date().toISOString(),
+    }));
+    await supabaseClient.from('daca_manual_fields')
+      .upsert(regs, { onConflict: 'teacher_id,assignment_id,bloco' });
+  }
+
+  toast('DACA salva com sucesso', 'success');
+}
+
+// ============================================================
+// CONSULTAR DACAs
+// ============================================================
+async function carregarDacas() {
+  const profId = $('filtro-prof').value || null;
+  const dataFiltro = $('filtro-data').value || null;
+
+  let q = supabaseClient.from('daca_records').select('*, teachers(full_name)').order('data_atribuicao', { ascending: false });
+  if (profId) q = q.eq('teacher_id', profId);
+  if (dataFiltro) q = q.eq('data_atribuicao', dataFiltro);
+
+  const { data, error } = await q;
+  if (error) return toast(error.message, 'error');
+
+  const linhas = data || [];
+  $('lista-dacas').innerHTML = linhas.length
+    ? linhas.map(d => `<tr>
+        <td>${esc(d.teachers?.full_name || d.prof_nome || '—')}</td>
+        <td>${esc(d.prof_disciplina || '—')}</td>
+        <td>${dataBR(d.data_atribuicao)}</td>
+        <td>${d.ano_documento}</td>
+        <td>${esc(d.unidade_sede || '—')}</td>
+        <td>
+          <button class="btn btn-primary btn-sm" onclick="verDaca('${d.id}')">Ver</button>
+          <button class="btn btn-danger btn-sm" onclick="excluirDaca('${d.id}')">Excluir</button>
+        </td>
+      </tr>`).join('')
+    : '<tr><td colspan="6" style="text-align:center;color:#6b7280;padding:30px;">Nenhuma DACA encontrada.</td></tr>';
+}
+
+function limparFiltrosConsulta() {
+  $('filtro-prof').value = '';
+  $('filtro-data').value = '';
+  carregarDacas();
+}
+
+async function verDaca(id) {
+  const { data: rec, error: err1 } = await supabaseClient
+    .from('daca_records').select('*').eq('id', id).single();
+  if (err1) return toast(err1.message, 'error');
+
+  const { data: linhas, error: err2 } = await supabaseClient
+    .from('daca_records_assignments').select('*').eq('daca_record_id', id);
+  if (err2) return toast(err2.message, 'error');
+
+  // Reconstrói o objeto dadosDaca
+  const dd = { titular: [], carga: [], deixou: [], assumiu: [] };
+  (linhas || []).forEach(r => {
+    dd[r.bloco].push({
+      assignment_id: r.assignment_id,
+      school_name: r.school_name,
+      class_name: r.class_name,
+      class_period: r.class_period,
+      discipline_name: r.discipline_name,
+      lesson_count: r.lesson_count,
+    });
+  });
+
+  // Reconstrói os manuais
+  const mm = {};
+  (linhas || []).forEach(r => {
+    mm[`${r.assignment_id}|${r.bloco}`] = {
+      aulas_1sem: r.aulas_1sem,
+      aulas_2sem: r.aulas_2sem,
+      aulas_mes: r.aulas_mes,
+    };
+  });
+
+  // Reconstrói o ctx (dados congelados)
+  const ctx = {
+    settings: {
+      prefeitura: rec.header_prefeitura,
+      secretaria: rec.header_secretaria,
+      endereco: rec.header_endereco,
+      telefone: rec.header_telefone,
+      email: rec.header_email,
+      logo_url: rec.header_logo_url,
+    },
+    professor: {
+      full_name: rec.prof_nome,
+      rg: rec.prof_rg,
+      cpf: rec.prof_cpf,
+      disciplines: { name: rec.prof_disciplina },
+    },
+    dadosProf: {
+      peb: rec.prof_peb,
+      classificacao: rec.prof_classificacao,
+      rg: rec.prof_rg,
+      cpf: rec.prof_cpf,
+      jornada: rec.prof_jornada,
+      categoria: rec.prof_categoria,
+      afastamento: rec.prof_afastamento,
+      carga_suplementar: rec.prof_carga_suplementar,
+      professor_excedente: rec.prof_professor_excedente,
+    },
+    dadosDaca: dd,
+    manuais: mm,
+    ano: rec.ano_documento,
+    dataAtrib: dataBR(rec.data_atribuicao),
+    unidadeSede: rec.unidade_sede,
+    ataTexto: rec.texto_ata,
+    editavel: false,
+  };
+
+  $('modal-doc-content').innerHTML = `<div class="doc">${renderDocumento(ctx)}</div>`;
+  $('modal-daca').style.display = 'block';
+}
+
+function fecharModal() {
+  $('modal-daca').style.display = 'none';
+}
+
+async function excluirDaca(id) {
+  if (!confirm('Excluir esta DACA? A ação não pode ser desfeita.')) return;
+  const { error } = await supabaseClient.from('daca_records').delete().eq('id', id);
+  if (error) return toast(error.message, 'error');
+  toast('DACA excluída', 'success');
+  carregarDacas();
 }
 
 // ============================================================
 // EVENTOS
 // ============================================================
-$('seletor-professor').addEventListener('change', (e) => carregarDaca(e.target.value));
-$('ano-doc').addEventListener('change', () => { if (teacherAtualId) renderizar(); });
+$('seletor-professor').addEventListener('change', (e) => {
+  ataTextoAtual = '';
+  carregarDaca(e.target.value);
+});
+$('ano-doc').addEventListener('change', () => { if (teacherAtualId) { ataTextoAtual = ''; renderizar(); } });
 $('data-atribuicao').addEventListener('change', () => { if (teacherAtualId) renderizar(); });
 
 // ============================================================
@@ -758,6 +983,7 @@ $('data-atribuicao').addEventListener('change', () => { if (teacherAtualId) rend
   const session = await requireLogin();
   if (!session) return;
   $('logout').onclick = (e) => { e.preventDefault(); logout(); };
+  await carregarSettings();
   await carregarProfessores();
 })();
 </script>
