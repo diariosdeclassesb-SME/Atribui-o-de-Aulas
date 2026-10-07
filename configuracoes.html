@@ -17,7 +17,8 @@
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
   .card h2 { font-size: 15px; margin: 0 0 16px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
   label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; margin-top: 12px; }
-  input { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white; font-family: inherit; }
+  input, textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white; font-family: inherit; }
+  textarea { resize: vertical; line-height: 1.5; }
   .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
   .btn-primary { background: var(--primary); color: white; }
   .btn-primary:hover { background: var(--primary-dark); }
@@ -32,10 +33,12 @@
   .upload-area.drag { border-color: var(--primary); background: #dbeafe; }
   .upload-area .icon { font-size: 32px; color: var(--muted); margin-bottom: 6px; }
   .upload-area .texto { font-size: 13px; color: var(--muted); }
-  .preview { margin-top: 16px; padding: 16px; background: #f9fafb; border-radius: 6px; text-align: center; position: relative; }
+  .preview { margin-top: 16px; padding: 16px; background: #f9fafb; border-radius: 6px; text-align: center; }
   .preview img { max-height: 120px; max-width: 100%; }
   .progress { margin-top: 10px; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
   .progress .bar { height: 100%; background: var(--primary); width: 0%; transition: width .2s; }
+  .hint { font-size: 12px; color: var(--muted); margin: 6px 0 0; line-height: 1.5; }
+  .hint code { background: #e5e7eb; padding: 1px 5px; border-radius: 3px; font-size: 11px; }
   .toast { position: fixed; bottom: 20px; right: 20px; background: #111827; color: white; padding: 12px 20px; border-radius: 6px; font-size: 14px; opacity: 0; transition: opacity .3s; pointer-events: none; }
   .toast.show { opacity: 1; } .toast.error { background: #dc2626; } .toast.success { background: #059669; }
 </style>
@@ -89,8 +92,28 @@
     <div class="preview" id="preview-logo">
       <span style="color:var(--muted);font-size:13px;">Nenhum brasão carregado</span>
     </div>
+  </div>
 
-    <div style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
+  <div class="card">
+    <h2>Texto padrão da ATA</h2>
+    <p class="hint">
+      Este texto é usado como base para gerar a ATA no DACA. Os campos abaixo serão substituídos automaticamente:<br>
+      • <code>{{professor}}</code> → nome do professor<br>
+      • <code>{{turmas}}</code> → lista de turmas atribuídas<br>
+      Você também pode usar <code>_________________</code> (5+ underscores). O 1º será o nome, o 2º as turmas.
+    </p>
+
+    <label>Texto base da ATA</label>
+    <textarea id="cfg-ata" rows="10" placeholder="Cole aqui o texto da ATA. Ex: Aos ____ dias do mês de ____, reuniu-se a Comissão de Atribuição para registrar as escolhas do(a) professor(a) {{professor}} nas turmas {{turmas}}..."></textarea>
+
+    <label>Pré-visualização (com dados de exemplo)</label>
+    <div style="background:#f9fafb;border:1px solid var(--border);border-radius:6px;padding:10px;font-size:13px;line-height:1.5;min-height:40px;" id="preview-ata">
+      <span style="color:var(--muted);">Digite o texto acima para ver a pré-visualização</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
       <button class="btn btn-primary" onclick="salvar()">Salvar configurações</button>
       <button class="btn btn-secondary" onclick="carregar()">Recarregar</button>
       <button class="btn btn-danger" id="btn-remover-logo" onclick="removerLogo()" style="display:none;">Remover brasão</button>
@@ -134,8 +157,10 @@ async function carregar() {
   $('cfg-endereco').value = data.endereco || '';
   $('cfg-telefone').value = data.telefone || '';
   $('cfg-email').value = data.email || '';
+  $('cfg-ata').value = data.ata_template || '';
   logoAtualUrl = data.logo_url || null;
   atualizarPreview(logoAtualUrl);
+  atualizarPreviewAta();
 }
 
 function atualizarPreview(url) {
@@ -148,6 +173,26 @@ function atualizarPreview(url) {
     $('btn-remover-logo').style.display = 'none';
   }
 }
+
+function atualizarPreviewAta() {
+  const tpl = $('cfg-ata').value;
+  const box = $('preview-ata');
+  if (!tpl.trim()) {
+    box.innerHTML = '<span style="color:var(--muted);">Digite o texto acima para ver a pré-visualização</span>';
+    return;
+  }
+  const prof = 'João da Silva';
+  const turmas = '9º A (His.), 9º A (Rel.), 8º B (His.)';
+  let texto = tpl
+    .replace(/\{\{professor\}\}/g, prof)
+    .replace(/\{\{turmas\}\}/g, turmas);
+  const partes = [prof, turmas];
+  let i = 0;
+  texto = texto.replace(/_{5,}/g, () => partes[Math.min(i++, partes.length - 1)]);
+  box.textContent = 'ATA: ' + texto;
+}
+
+$('cfg-ata').addEventListener('input', atualizarPreviewAta);
 
 // ------- Upload -------
 const uploadArea = $('upload-area');
@@ -162,9 +207,7 @@ uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag
 uploadArea.addEventListener('drop', (e) => {
   e.preventDefault();
   uploadArea.classList.remove('drag');
-  if (e.dataTransfer.files.length > 0) {
-    fazerUpload(e.dataTransfer.files[0]);
-  }
+  if (e.dataTransfer.files.length > 0) fazerUpload(e.dataTransfer.files[0]);
 });
 fileInput.addEventListener('change', (e) => {
   if (e.target.files.length > 0) fazerUpload(e.target.files[0]);
@@ -175,18 +218,16 @@ async function fazerUpload(file) {
   const tipos = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp'];
   if (!tipos.includes(file.type)) return toast('Formato inválido. Use PNG, JPG, SVG ou WebP.', 'error');
 
-  // Nome único baseado em timestamp + nome original
   const ext = file.name.split('.').pop().toLowerCase();
-  const nomeArquivo = `brasao.${ext}`; // sempre sobrescreve o mesmo nome
+  const nomeArquivo = `brasao.${ext}`;
 
   $('progress-box').style.display = 'block';
   $('progress-bar').style.width = '30%';
 
-  // Remove o antigo (se existir) para não acumular lixo
   if (logoAtualUrl) {
     const caminhoAntigo = logoAtualUrl.split('/storage/v1/object/public/brasao/')[1];
     if (caminhoAntigo) {
-      await supabaseClient.storage.from('brasao').remove([caminhoAntigo]);
+      await supabaseClient.storage.from('brasao').remove([caminhoAntigo.split('?')[0]]);
     }
   }
 
@@ -201,14 +242,11 @@ async function fazerUpload(file) {
     return toast('Erro upload: ' + errUpload.message, 'error');
   }
 
-  // URL pública
   const { data: pub } = supabaseClient.storage.from('brasao').getPublicUrl(nomeArquivo);
-  const url = pub.publicUrl + '?v=' + Date.now(); // cache busting
+  const url = pub.publicUrl + '?v=' + Date.now();
 
-  // Salva a URL no banco
   const { error: errDb } = await supabaseClient.from('daca_settings')
-    .update({ logo_url: url, updated_at: new Date().toISOString() })
-    .eq('id', 1);
+    .update({ logo_url: url, updated_at: new Date().toISOString() }).eq('id', 1);
 
   $('progress-box').style.display = 'none';
   $('progress-bar').style.width = '0%';
@@ -236,7 +274,6 @@ async function removerLogo() {
   toast('Brasão removido', 'success');
 }
 
-// ------- Salvar textos -------
 async function salvar() {
   const payload = {
     id: 1,
@@ -245,6 +282,7 @@ async function salvar() {
     endereco: $('cfg-endereco').value.trim(),
     telefone: $('cfg-telefone').value.trim(),
     email: $('cfg-email').value.trim(),
+    ata_template: $('cfg-ata').value,
     logo_url: logoAtualUrl,
     updated_at: new Date().toISOString(),
   };

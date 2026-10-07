@@ -69,12 +69,13 @@
   <section class="panel active" id="panel-escolas">
     <div class="card">
       <div class="form-row">
-        <div><label>Nome da escola</label><input id="escola-nome" placeholder="Ex: Escola Municipal A" /></div>
+        <div><label>Nome da escola</label><input id="escola-nome" placeholder='Ex: E.M.E.F. "Barão de Santa Branca"' /></div>
+        <div><label>Nome curto (usado no DACA)</label><input id="escola-short" placeholder="Ex: Barão" /></div>
         <button class="btn btn-primary" onclick="addEscola()">Adicionar</button>
       </div>
     </div>
     <div class="card">
-      <table><thead><tr><th>Nome</th><th style="width:80px">Ações</th></tr></thead><tbody id="lista-escolas"></tbody></table>
+      <table><thead><tr><th>Nome</th><th>Nome curto</th><th style="width:160px">Ações</th></tr></thead><tbody id="lista-escolas"></tbody></table>
     </div>
   </section>
 
@@ -123,8 +124,8 @@
       <div class="form-row">
         <div><label>Nome completo</label><input id="prof-nome" placeholder="Ex: João da Silva" /></div>
         <div><label>E-mail (opcional)</label><input id="prof-email" type="email" /></div>
-        <div><label>RG</label><input id="prof-rg" placeholder="Ex: 00.000.000-0" /></div>
-        <div><label>CPF</label><input id="prof-cpf" placeholder="Ex: 000.000.000-00" /></div>
+        <div><label>RG</label><input id="prof-rg" placeholder="Ex: 20.143.972-4" /></div>
+        <div><label>CPF</label><input id="prof-cpf" placeholder="Ex: 090.134.298-07" /></div>
         <div><label>Disciplina</label><select id="prof-disciplina"></select></div>
         <button class="btn btn-primary" onclick="addProfessor()">Adicionar</button>
       </div>
@@ -135,7 +136,23 @@
   </section>
 </div>
 
-<!-- Modal de edição de professor -->
+<!-- Modal edição escola -->
+<div class="modal-bg" id="modal-escola">
+  <div class="modal">
+    <h3>Editar escola</h3>
+    <input type="hidden" id="edit-escola-id" />
+    <div style="display:grid;gap:10px;">
+      <div><label>Nome completo</label><input id="edit-escola-nome" /></div>
+      <div><label>Nome curto (usado no DACA)</label><input id="edit-escola-short" /></div>
+    </div>
+    <div class="actions">
+      <button class="btn" style="background:#e5e7eb" onclick="fecharModalEscola()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEdicaoEscola()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal edição professor -->
 <div class="modal-bg" id="modal-prof">
   <div class="modal">
     <h3>Editar professor</h3>
@@ -148,7 +165,7 @@
       <div><label>Disciplina</label><select id="edit-prof-disciplina"></select></div>
     </div>
     <div class="actions">
-      <button class="btn" style="background:#e5e7eb" onclick="fecharModal()">Cancelar</button>
+      <button class="btn" style="background:#e5e7eb" onclick="fecharModalProf()">Cancelar</button>
       <button class="btn btn-primary" onclick="salvarEdicaoProf()">Salvar</button>
     </div>
   </div>
@@ -223,8 +240,15 @@ function preencherSelects() {
 
 function renderEscolas() {
   $('lista-escolas').innerHTML = escolas.length
-    ? escolas.map(e => `<tr><td>${esc(e.name)}</td><td><button class="btn btn-danger" onclick="delEscola('${e.id}')">Excluir</button></td></tr>`).join('')
-    : '<tr><td colspan="2" class="empty">Nenhuma escola cadastrada.</td></tr>';
+    ? escolas.map(e => `<tr>
+        <td>${esc(e.name)}</td>
+        <td>${esc(e.short_name || '—')}</td>
+        <td>
+          <button class="btn btn-edit" onclick="abrirEdicaoEscola('${e.id}')">Editar</button>
+          <button class="btn btn-danger" onclick="delEscola('${e.id}')">Excluir</button>
+        </td>
+      </tr>`).join('')
+    : '<tr><td colspan="3" class="empty">Nenhuma escola cadastrada.</td></tr>';
 }
 function renderDisciplinas() {
   $('lista-disciplinas').innerHTML = disciplinas.length
@@ -250,7 +274,7 @@ function renderProfessores() {
         <td>${esc(p.cpf || '—')}</td>
         <td>${esc(p.disciplines?.name || '—')}</td>
         <td>
-          <button class="btn btn-edit" onclick="abrirEdicao('${p.id}')">Editar</button>
+          <button class="btn btn-edit" onclick="abrirEdicaoProf('${p.id}')">Editar</button>
           <button class="btn btn-danger" onclick="delProfessor('${p.id}')">Excluir</button>
         </td>
       </tr>`).join('')
@@ -259,10 +283,12 @@ function renderProfessores() {
 
 async function addEscola() {
   const name = $('escola-nome').value.trim();
+  const short_name = $('escola-short').value.trim() || null;
   if (!name) return toast('Digite o nome da escola', true);
-  const { error } = await supabaseClient.from('schools').insert({ name });
+  const { error } = await supabaseClient.from('schools').insert({ name, short_name });
   if (error) return toast(error.message, true);
-  $('escola-nome').value = ''; toast('Escola adicionada'); carregarTudo();
+  $('escola-nome').value = ''; $('escola-short').value = '';
+  toast('Escola adicionada'); carregarTudo();
 }
 async function delEscola(id) {
   if (!confirm('Excluir esta escola? Todas as turmas dela também serão removidas.')) return;
@@ -270,12 +296,32 @@ async function delEscola(id) {
   if (error) return toast(error.message, true);
   toast('Escola removida'); carregarTudo();
 }
+function abrirEdicaoEscola(id) {
+  const e = escolas.find(x => x.id === id);
+  if (!e) return;
+  $('edit-escola-id').value = e.id;
+  $('edit-escola-nome').value = e.name || '';
+  $('edit-escola-short').value = e.short_name || '';
+  $('modal-escola').classList.add('show');
+}
+function fecharModalEscola() { $('modal-escola').classList.remove('show'); }
+async function salvarEdicaoEscola() {
+  const id = $('edit-escola-id').value;
+  const name = $('edit-escola-nome').value.trim();
+  const short_name = $('edit-escola-short').value.trim() || null;
+  if (!name) return toast('Digite o nome', true);
+  const { error } = await supabaseClient.from('schools').update({ name, short_name }).eq('id', id);
+  if (error) return toast(error.message, true);
+  fecharModalEscola(); toast('Escola atualizada'); carregarTudo();
+}
+
 async function addDisciplina() {
   const name = $('disciplina-nome').value.trim();
   if (!name) return toast('Digite o nome da disciplina', true);
   const { error } = await supabaseClient.from('disciplines').insert({ name });
   if (error) return toast(error.message, true);
-  $('disciplina-nome').value = ''; toast('Disciplina adicionada'); carregarTudo();
+  $('disciplina-nome').value = '';
+  toast('Disciplina adicionada'); carregarTudo();
 }
 async function delDisciplina(id) {
   if (!confirm('Excluir esta disciplina?')) return;
@@ -290,7 +336,8 @@ async function addTurma() {
   if (!school_id || !name) return toast('Preencha escola e nome', true);
   const { error } = await supabaseClient.from('classes').insert({ school_id, name, period });
   if (error) return toast(error.message, true);
-  $('turma-nome').value = ''; toast('Turma adicionada'); carregarTudo();
+  $('turma-nome').value = '';
+  toast('Turma adicionada'); carregarTudo();
 }
 async function delTurma(id) {
   if (!confirm('Excluir esta turma?')) return;
@@ -332,8 +379,7 @@ async function delProfessor(id) {
   if (error) return toast(error.message, true);
   toast('Professor removido'); carregarTudo();
 }
-
-function abrirEdicao(id) {
+function abrirEdicaoProf(id) {
   const p = professores.find(x => x.id === id);
   if (!p) return;
   $('edit-prof-id').value = p.id;
@@ -344,9 +390,7 @@ function abrirEdicao(id) {
   $('edit-prof-disciplina').value = p.discipline_id || '';
   $('modal-prof').classList.add('show');
 }
-function fecharModal() {
-  $('modal-prof').classList.remove('show');
-}
+function fecharModalProf() { $('modal-prof').classList.remove('show'); }
 async function salvarEdicaoProf() {
   const id = $('edit-prof-id').value;
   const full_name = $('edit-prof-nome').value.trim();
@@ -357,7 +401,7 @@ async function salvarEdicaoProf() {
   if (!full_name) return toast('Digite o nome', true);
   const { error } = await supabaseClient.from('teachers').update({ full_name, email, rg, cpf, discipline_id }).eq('id', id);
   if (error) return toast(error.message, true);
-  fecharModal(); toast('Professor atualizado'); carregarTudo();
+  fecharModalProf(); toast('Professor atualizado'); carregarTudo();
 }
 
 (async () => {
