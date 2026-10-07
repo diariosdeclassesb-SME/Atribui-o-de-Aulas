@@ -46,12 +46,35 @@
   .field-doc:focus { background: #fef3c7; outline: 1px solid #f59e0b; }
   .field-doc.auto { background: #f3f4f6; }
 
-  table.daca { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 9px; table-layout: fixed; }
-  table.daca th, table.daca td { border: 1px solid #000; padding: 1px 3px; vertical-align: middle; }
-  table.daca th { background: #f3f4f6; font-weight: 700; text-align: center; font-size: 8px; line-height: 1.15; }
-  .bloco-label { writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; font-weight: 700; font-size: 8.5px; padding: 6px 1px !important; width: 18px; letter-spacing: .5px; white-space: nowrap; }
-  .col-per { width: 20px; text-align: center; font-size: 9px; }
-  .col-qtd { text-align: center; font-size: 9px; }
+  /* Tabela por bloco */
+  table.bloco { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 9px; table-layout: fixed; }
+  table.bloco th, table.bloco td { border: 1px solid #000; padding: 1px 3px; vertical-align: middle; }
+  table.bloco th { background: #f3f4f6; font-weight: 700; text-align: center; font-size: 8px; line-height: 1.15; }
+
+  /* Bloco vertical */
+  td.bloco-label {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    text-align: center;
+    font-weight: 700;
+    font-size: 8px;
+    padding: 4px 0 !important;
+    width: 22px;
+    white-space: nowrap;
+    vertical-align: middle;
+    background: #fafafa;
+    letter-spacing: .3px;
+  }
+
+  /* Subtítulo (Deixou / Assumiu) */
+  td.subtitulo {
+    background: #f3f4f6;
+    text-align: center;
+    font-weight: 700;
+    font-size: 9px;
+    padding: 3px;
+  }
+
   .field-edit { width: 100%; border: none; background: transparent; font-size: 9px; text-align: center; padding: 0; font-family: inherit; }
   .field-edit:focus { background: #fef3c7; outline: 1px solid #f59e0b; }
   .field-edit::-webkit-outer-spin-button, .field-edit::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -59,10 +82,19 @@
   .ata-box { border: 1px solid #000; border-top: none; padding: 4px 8px; font-size: 8px; line-height: 1.35; text-align: justify; min-height: 90px; }
   .ata-box .ata-label { font-weight: 700; }
   .ata-box:focus { outline: 2px solid #f59e0b; outline-offset: -2px; }
-  .assinaturas-finais { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px; padding: 0 20px; }
+  .assinaturas-finais { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px; padding: 0 20px; }
   .assinaturas-finais .item { text-align: center; }
   .assinaturas-finais .linha { border-top: 1px solid #000; margin-bottom: 3px; height: 1px; }
   .assinaturas-finais .rotulo { font-size: 9px; font-weight: 700; letter-spacing: .5px; }
+
+  /* Espaço para o rodapé assinar */
+  .assinatura-por-linha {
+    display: block;
+    border-bottom: 1px solid #000;
+    height: 14px;
+    margin: 2px 3px;
+  }
+
   .daca-list { max-width: 1100px; margin: 20px auto; padding: 0 16px; }
   .daca-list table { width: 100%; background: #fff; border-radius: 8px; overflow: hidden; font-size: 13px; }
   .daca-list th, .daca-list td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; }
@@ -148,6 +180,26 @@ const SUPABASE_URL = 'https://dflzprsopnwgobcxuqfu.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_HAMF9aaI6tEtztq4pXAVPw_PM_9wyad';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+const MAPA_NOMES_CURTOS = {
+  'Creche Municipal "Estudante Renato Cabral Pereira"': 'Creche I',
+  'Creche Municipal "Vereador Benedito Cantinho Braga Filho – Diquito Braga"': 'Creche II',
+  'Creche Municipal "Vereador Benedito Cantinho Braga Filho - Diquito Braga"': 'Creche II',
+  'E.M.E.F. "Barão de Santa Branca"': 'Barão',
+  'E.M.E.F. "Prof.ª Palmyra Martins Rosa Perillo"': 'Palmyra',
+  'E.M.E.F. "Prof.ª Benedita Pereira de Albuquerque"': 'Benedita',
+  'E.M.E.F. "Prof.ª Francisca Rosa Gomes"': 'Rosa Gomes',
+  'E.M.E.F. "Prof.ª Isaura Martins Rosa de Siqueira"': 'Isaura',
+  'E.M.E.I. "Terezinha do Menino Jesus Porto Wuó"': 'Terezinha',
+  'E.M.E.I.F (R) "Prof.ª Maria Apparecida Fonseca"': 'Fonseca',
+  'E.M.E.I.F (R) "Prof.ª Sylvia Cantinho Braga Campos"': 'Sylvia',
+};
+
+function nomeCurto(nomeCompleto, shortName) {
+  if (shortName && shortName.trim()) return shortName.trim();
+  if (MAPA_NOMES_CURTOS[nomeCompleto]) return MAPA_NOMES_CURTOS[nomeCompleto];
+  return nomeCompleto;
+}
+
 const $ = (id) => document.getElementById(id);
 function toast(msg, tipo = '') {
   const t = $('toast'); t.textContent = msg;
@@ -208,7 +260,7 @@ async function carregarManuais(teacherId) {
   manuais = {};
   (data || []).forEach(m => {
     manuais[`${m.assignment_id}|${m.bloco}`] = {
-      hec: m.hec, ha: m.ha, total_sm: m.total_sm,
+      hec: m.hec, ha: m.ha, hll: m.hll, total_sm: m.total_sm,
     };
   });
 }
@@ -236,18 +288,12 @@ function calcularUnidadeSede(dd) {
 
 function gerarAtaDoTemplate(professorNome, turmas) {
   const tpl = settings.ata_template;
-  if (!tpl) return 'Aos <strong>_____</strong> dias do mês de <strong>_____</strong>, … (clique aqui para editar o texto da ata)';
+  if (!tpl) return 'Aos <strong>_____</strong> dias do mês de <strong>_____</strong>, reuniu-se a Comissão de Atribuição para proceder às escolhas do professor <strong>' + esc(professorNome) + '</strong> para as turmas <strong>' + esc(turmas) + '</strong>. (clique aqui para editar)';
 
-  // Substitui primeiro os placeholders nomeados, se existirem
-  let texto = tpl
-    .replace(/\{\{professor\}\}/g, professorNome)
-    .replace(/\{\{turmas\}\}/g, turmas);
-
-  // Depois substitui os _________________ sequencialmente (1º = nome, 2º = turmas)
+  let texto = tpl.replace(/\{\{professor\}\}/g, professorNome).replace(/\{\{turmas\}\}/g, turmas);
   const partes = ['<strong>' + professorNome + '</strong>', '<strong>' + turmas + '</strong>'];
   let i = 0;
   texto = texto.replace(/_{5,}/g, () => partes[Math.min(i++, partes.length-1)]);
-
   return texto;
 }
 
@@ -258,21 +304,28 @@ function renderizar() {
   const dataAtrib = $('data-atribuicao').value ? dataBR($('data-atribuicao').value) : dataHojeBR();
   const unidadeSede = calcularUnidadeSede(dadosDaca);
 
-  // Turmas (todas) para o template da ATA
   const todas = [...dadosDaca.titular, ...dadosDaca.carga, ...dadosDaca.assumiu];
   const listaTurmas = [...new Set(todas.map(t => {
     const ab = abreviarDisciplina(t.discipline_name);
     return ab ? `${t.class_name} (${ab})` : t.class_name;
   }))].join(', ') || '—';
 
-  const ataTexto = settings.ata_template
-    ? gerarAtaDoTemplate(prof.full_name, listaTurmas)
-    : (window.ataAtual || 'Aos <strong>_____</strong> dias do mês de <strong>_____</strong>, reuniu-se a Comissão de Atribuição para proceder às escolhas do professor <strong>' + esc(prof.full_name) + '</strong> para as turmas <strong>' + esc(listaTurmas) + '</strong>. (clique aqui para editar)');
+  const ataTexto = gerarAtaDoTemplate(prof.full_name, listaTurmas);
 
   $('doc').innerHTML = renderDocumento({
     settings, professor: prof, dadosProf, dadosDaca, manuais,
     ano, dataAtrib, unidadeSede, ataTexto, editavel: true,
   });
+}
+
+// Calcula totais por período de uma lista
+function totaisPorPeriodo(lista) {
+  const t = { M: 0, T: 0, N: 0, I: 0 };
+  lista.forEach(r => {
+    const per = (r.class_period || '').charAt(0).toUpperCase();
+    if (t[per] !== undefined) t[per] += r.lesson_count || 0;
+  });
+  return t;
 }
 
 function renderDocumento(ctx) {
@@ -290,37 +343,40 @@ function renderDocumento(ctx) {
     </select>`;
   };
 
-  const linhasTitular = renderLinhas(dd.titular, 'titular', mm, editavel);
-  const linhasCarga = renderLinhas(dd.carga, 'carga', mm, editavel);
-  const linhasDeixou = renderLinhas(dd.deixou, 'deixou', mm, editavel);
-  const linhasAssumiu = renderLinhas(dd.assumiu, 'assumiu', mm, editavel);
-
-  const rowspanTitular = Math.max(dd.titular.length, 1);
-  const rowspanCarga = Math.max(dd.carga.length, 1);
-  const rowspanSubst = Math.max(dd.deixou.length, 1) + Math.max(dd.assumiu.length, 1);
-
   const pref = settings.prefeitura || 'PREFEITURA MUNICIPAL DE SANTA BRANCA';
   const sec = settings.secretaria || 'SECRETARIA MUNICIPAL DE EDUCAÇÃO';
   const end = settings.endereco || 'Rua Independência, s/nº - Centro - Santa Branca – São Paulo – CEP: 12.380-000';
   const tel = settings.telefone || 'Tel: (12) 3972-1686 - 3972-3061';
-  const mail = settings.email || 'educacao@santabranca.sp.gov.br';
+  const mail = settings.email || 'semebranca@gmail.com';
   const logo = settings.logo_url;
   const logoHtml = logo
     ? `<img src="${esc(logo)}" alt="Brasão" onerror="this.style.display='none';this.parentNode.innerHTML='BRASÃO';">`
     : 'BRASÃO';
 
-  // Cabeçalho da tabela (só aparece uma vez, no bloco I)
-  const thead = `
+  // Colunas compartilhadas entre as 3 tabelas
+  const colgroupHtml = `
     <colgroup>
-      <col style="width:18px"><col style="width:72px"><col>
-      <col style="width:22px"><col style="width:22px"><col style="width:22px">
-      <col style="width:30px"><col style="width:30px">
-      <col style="width:34px"><col style="width:34px"><col style="width:34px"><col style="width:60px">
+      <col style="width:22px">
       <col style="width:70px">
-    </colgroup>
+      <col>
+      <col style="width:24px">
+      <col style="width:24px">
+      <col style="width:24px">
+      <col style="width:36px">
+      <col style="width:36px">
+      <col style="width:44px">
+      <col style="width:36px">
+      <col style="width:36px">
+      <col style="width:36px">
+      <col style="width:56px">
+      <col style="width:70px">
+    </colgroup>`;
+
+  // Cabeçalho (só na primeira tabela)
+  const theadHtml = `
     <thead>
       <tr>
-        <th rowspan="2">Bloco</th>
+        <th rowspan="2" class="bloco-label">Bloco</th>
         <th rowspan="2">Unidade Escolar</th>
         <th rowspan="2">Classes Atribuídas</th>
         <th colspan="3">Período</th>
@@ -328,12 +384,16 @@ function renderDocumento(ctx) {
         <th rowspan="2">Nº de Aulas Semanais</th>
         <th rowspan="2">H.E.C</th>
         <th rowspan="2">H.A</th>
+        <th rowspan="2">H.L.L.E</th>
         <th rowspan="2">Total de Aulas Semanal/Mensal</th>
         <th rowspan="2">Assinatura</th>
       </tr>
       <tr>
-        <th>M</th><th>T</th><th>N</th>
-        <th>Livre</th><th>Subs.</th>
+        <th>M</th>
+        <th>T</th>
+        <th>N</th>
+        <th>Livre</th>
+        <th>Subs.</th>
       </tr>
     </thead>`;
 
@@ -371,28 +431,9 @@ function renderDocumento(ctx) {
       <div class="cell row-last" style="border-right:none;border-bottom:none;"></div>
     </div>
 
-    <table class="daca">
-      ${thead}
-      <tbody>
-        <!-- BLOCO I - TITULAR -->
-        <tr>
-          <td rowspan="${rowspanTitular}" class="bloco-label">I - Titular</td>
-          ${linhasTitular || `<td colspan="12" style="text-align:center;color:#6b7280;">Nenhuma turma atribuída como Titular</td>`}
-        </tr>
-
-        <!-- BLOCO II - CARGA SUPLEMENTAR (sem cabeçalho) -->
-        <tr>
-          <td rowspan="${rowspanCarga}" class="bloco-label">II - Carga Suplem.</td>
-          ${linhasCarga || `<td colspan="12" style="text-align:center;color:#6b7280;">Nenhuma turma em Carga Suplementar</td>`}
-        </tr>
-
-        <!-- BLOCO III - SUBSTITUIÇÃO (sem cabeçalho) -->
-        <tr>
-          <td rowspan="${rowspanSubst}" class="bloco-label">III - Substituição</td>
-          ${linhasDeixou || (linhasAssumiu ? '' : `<td colspan="12" style="text-align:center;color:#6b7280;">—</td>`)}
-        </tr>
-      </tbody>
-    </table>
+    ${renderTabelaBloco('I - Titular', 'titular', dd.titular, mm, editavel, true, colgroupHtml, theadHtml, 'Livre')}
+    ${renderTabelaBloco('II - Carga Suplem.', 'carga', dd.carga, mm, editavel, false, colgroupHtml, '', 'Livre')}
+    ${renderTabelaBlocoSubstituicao(dd.deixou, dd.assumiu, mm, editavel, colgroupHtml)}
 
     <div class="ata-box" ${editavel ? 'contenteditable="true"' : ''} id="ata-texto">
       <span class="ata-label">ATA:</span> ${ataTexto}
@@ -404,44 +445,173 @@ function renderDocumento(ctx) {
     </div>`;
 }
 
-function renderLinhas(lista, bloco, mm, editavel) {
-  if (!lista || lista.length === 0) return '';
-  return lista.map(r => {
-    const key = `${r.assignment_id}|${bloco}`;
-    const m = mm[key] || { hec: '', ha: '', total_sm: '' };
-    const val = v => v === null || v === undefined || v === '' ? '' : v;
-    const nomeCurto = r.school_short_name || r.school_name || '—';
-    const ab = abreviarDisciplina(r.discipline_name);
-    const turmaLabel = ab ? `${r.class_name} (${ab})` : r.class_name;
-    const per = (r.class_period || '').charAt(0).toUpperCase();
-    const qtd = r.lesson_count || 0;
+// Renderiza uma tabela de bloco (Titular ou Carga Suplementar)
+function renderTabelaBloco(rotulo, bloco, lista, mm, editavel, comThead, colgroupHtml, theadHtml, colunaSoma) {
+  const temLinhas = lista && lista.length > 0;
 
-    const inputEdit = (campo, valor) => editavel
-      ? `<input class="field-edit" type="text" data-key="${key}" data-campo="${campo}" value="${val(valor)}">`
-      : `<span style="font-size:9px;">${val(valor) || ''}</span>`;
+  // Totais por período
+  const totais = totaisPorPeriodo(lista || []);
+  const totalSemanal = (lista || []).reduce((s, r) => s + (r.lesson_count || 0), 0);
+  const totalLivre = totalSemanal; // Titular e Carga Suplementar contam como Livre
+  const totalSubs = 0;
 
-    const colM = per === 'M' ? qtd : '';
-    const colT = per === 'T' ? qtd : '';
-    const colN = per === 'N' ? qtd : '';
-    const colLivre = (bloco === 'titular' || bloco === 'carga') ? qtd : '';
-    const colSubs = bloco === 'assumiu' ? qtd : (bloco === 'deixou' ? '' : '');
+  // Corpo
+  let corpo = '';
+  if (!temLinhas) {
+    corpo = `<tr>
+      <td class="bloco-label" rowspan="1">${rotulo}</td>
+      <td colspan="13" style="text-align:center;color:#6b7280;">Nenhuma turma neste bloco</td>
+    </tr>`;
+  } else {
+    corpo = lista.map((r, i) => {
+      const key = `${r.assignment_id}|${bloco}`;
+      const m = mm[key] || { hec: '', ha: '', hll: '', total_sm: '' };
+      const val = v => v === null || v === undefined || v === '' ? '' : v;
+      const nomeEscola = nomeCurto(r.school_name, r.school_short_name);
+      const ab = abreviarDisciplina(r.discipline_name);
+      const turmaLabel = ab ? `${r.class_name} (${ab})` : r.class_name;
+      const rowspanInicial = i === 0 ? lista.length : 0;
 
-    return `
-      <tr>
-        <td>${esc(nomeCurto)}</td>
+      // Na primeira linha do bloco, coloca os totais; nas demais, vazio
+      const primeira = i === 0;
+      const colM = primeira ? totais.M || '' : '';
+      const colT = primeira ? totais.T || '' : '';
+      const colN = primeira ? totais.N || '' : '';
+      const colLivre = primeira ? totalLivre || '' : '';
+      const colSubs = primeira ? totalSubs || '' : '';
+      const colAulasSemanais = primeira ? totalSemanal || '' : '';
+
+      const inputEdit = (campo, valor) => editavel
+        ? `<input class="field-edit" type="text" data-key="${key}" data-campo="${campo}" value="${val(valor)}">`
+        : `<span style="font-size:9px;">${val(valor) || ''}</span>`;
+
+      return `<tr>
+        ${i === 0 ? `<td class="bloco-label" rowspan="${lista.length}">${rotulo}</td>` : ''}
+        <td>${esc(nomeEscola)}</td>
         <td>${esc(turmaLabel)}</td>
-        <td class="col-per">${colM}</td>
-        <td class="col-per">${colT}</td>
-        <td class="col-per">${colN}</td>
-        <td class="col-qtd">${colLivre}</td>
-        <td class="col-qtd">${colSubs}</td>
-        <td class="col-qtd">${qtd}</td>
+        <td style="text-align:center;">${colM}</td>
+        <td style="text-align:center;">${colT}</td>
+        <td style="text-align:center;">${colN}</td>
+        <td style="text-align:center;">${colLivre}</td>
+        <td style="text-align:center;">${colSubs}</td>
+        <td style="text-align:center;">${colAulasSemanais}</td>
         <td>${inputEdit('hec', m.hec)}</td>
         <td>${inputEdit('ha', m.ha)}</td>
+        <td>${inputEdit('hll', m.hll)}</td>
         <td>${inputEdit('total_sm', m.total_sm)}</td>
-        <td><div class="assinatura-linha"></div></td>
+        <td><div class="assinatura-por-linha"></div></td>
       </tr>`;
-  }).join('');
+    }).join('');
+  }
+
+  return `<table class="bloco">
+    ${colgroupHtml}
+    ${comThead ? theadHtml : ''}
+    <tbody>${corpo}</tbody>
+  </table>`;
+}
+
+// Renderiza tabela do bloco Substituição (tem 2 subtítulos: Deixou / Assumiu)
+function renderTabelaBlocoSubstituicao(deixou, assumiu, mm, editavel, colgroupHtml) {
+  const totDeixou = totaisPorPeriodo(deixou || []);
+  const totAssumiu = totaisPorPeriodo(assumiu || []);
+  const totalAulasDeixou = (deixou || []).reduce((s, r) => s + (r.lesson_count || 0), 0);
+  const totalAulasAssumiu = (assumiu || []).reduce((s, r) => s + (r.lesson_count || 0), 0);
+
+  const linhas = [];
+  linhas.push(`<tr><td colspan="14" class="subtitulo">Deixou as seguintes Classes:</td></tr>`);
+
+  if (!deixou || deixou.length === 0) {
+    linhas.push(`<tr><td colspan="14" style="text-align:center;color:#6b7280;font-size:9px;">—</td></tr>`);
+  } else {
+    deixou.forEach((r, i) => {
+      const key = `${r.assignment_id}|deixou`;
+      const m = mm[key] || { hec: '', ha: '', hll: '', total_sm: '' };
+      const val = v => v === null || v === undefined || v === '' ? '' : v;
+      const nomeEscola = nomeCurto(r.school_name, r.school_short_name);
+      const ab = abreviarDisciplina(r.discipline_name);
+      const turmaLabel = ab ? `${r.class_name} (${ab})` : r.class_name;
+      const primeira = i === 0;
+      const inputEdit = (campo, valor) => editavel
+        ? `<input class="field-edit" type="text" data-key="${key}" data-campo="${campo}" value="${val(valor)}">`
+        : `<span style="font-size:9px;">${val(valor) || ''}</span>`;
+
+      linhas.push(`<tr>
+        <td>${esc(nomeEscola)}</td>
+        <td>${esc(turmaLabel)}</td>
+        <td style="text-align:center;">${primeira ? (totDeixou.M || '') : ''}</td>
+        <td style="text-align:center;">${primeira ? (totDeixou.T || '') : ''}</td>
+        <td style="text-align:center;">${primeira ? (totDeixou.N || '') : ''}</td>
+        <td style="text-align:center;"></td>
+        <td style="text-align:center;"></td>
+        <td style="text-align:center;">${primeira ? (totalAulasDeixou || '') : ''}</td>
+        <td>${inputEdit('hec', m.hec)}</td>
+        <td>${inputEdit('ha', m.ha)}</td>
+        <td>${inputEdit('hll', m.hll)}</td>
+        <td>${inputEdit('total_sm', m.total_sm)}</td>
+        <td><div class="assinatura-por-linha"></div></td>
+      </tr>`);
+    });
+  }
+
+  linhas.push(`<tr><td colspan="14" class="subtitulo">Assumiu as seguintes Classes:</td></tr>`);
+
+  if (!assumiu || assumiu.length === 0) {
+    linhas.push(`<tr><td colspan="14" style="text-align:center;color:#6b7280;font-size:9px;">—</td></tr>`);
+  } else {
+    assumiu.forEach((r, i) => {
+      const key = `${r.assignment_id}|assumiu`;
+      const m = mm[key] || { hec: '', ha: '', hll: '', total_sm: '' };
+      const val = v => v === null || v === undefined || v === '' ? '' : v;
+      const nomeEscola = nomeCurto(r.school_name, r.school_short_name);
+      const ab = abreviarDisciplina(r.discipline_name);
+      const turmaLabel = ab ? `${r.class_name} (${ab})` : r.class_name;
+      const primeira = i === 0;
+      const inputEdit = (campo, valor) => editavel
+        ? `<input class="field-edit" type="text" data-key="${key}" data-campo="${campo}" value="${val(valor)}">`
+        : `<span style="font-size:9px;">${val(valor) || ''}</span>`;
+
+      linhas.push(`<tr>
+        <td>${esc(nomeEscola)}</td>
+        <td>${esc(turmaLabel)}</td>
+        <td style="text-align:center;">${primeira ? (totAssumiu.M || '') : ''}</td>
+        <td style="text-align:center;">${primeira ? (totAssumiu.T || '') : ''}</td>
+        <td style="text-align:center;">${primeira ? (totAssumiu.N || '') : ''}</td>
+        <td style="text-align:center;"></td>
+        <td style="text-align:center;">${primeira ? (totalAulasAssumiu || '') : ''}</td>
+        <td style="text-align:center;">${primeira ? (totalAulasAssumiu || '') : ''}</td>
+        <td>${inputEdit('hec', m.hec)}</td>
+        <td>${inputEdit('ha', m.ha)}</td>
+        <td>${inputEdit('hll', m.hll)}</td>
+        <td>${inputEdit('total_sm', m.total_sm)}</td>
+        <td><div class="assinatura-por-linha"></div></td>
+      </tr>`);
+    });
+  }
+
+  return `<table class="bloco">
+    ${colgroupHtml}
+    <tbody>
+      <tr>
+        <td class="bloco-label" rowspan="${linhas.length}">III - Substituição</td>
+        <td colspan="13" style="padding:0;border:none;">
+          <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+            <colgroup>
+              <col style="width:70px">
+              <col>
+              <col style="width:24px"><col style="width:24px"><col style="width:24px">
+              <col style="width:36px"><col style="width:36px">
+              <col style="width:44px">
+              <col style="width:36px"><col style="width:36px"><col style="width:36px">
+              <col style="width:56px">
+              <col style="width:70px">
+            </colgroup>
+            <tbody>${linhas.join('')}</tbody>
+          </table>
+        </td>
+      </tr>
+    </tbody>
+  </table>`;
 }
 
 async function salvarDaca() {
@@ -485,7 +655,7 @@ async function salvarDaca() {
   inputs.forEach(inp => {
     const key = inp.dataset.key; const campo = inp.dataset.campo;
     const [assignment_id, bloco] = key.split('|');
-    if (!agrupados[key]) agrupados[key] = { assignment_id, bloco, hec: null, ha: null, total_sm: null };
+    if (!agrupados[key]) agrupados[key] = { assignment_id, bloco, hec: null, ha: null, hll: null, total_sm: null };
     agrupados[key][campo] = inp.value === '' ? null : inp.value;
   });
 
@@ -507,11 +677,12 @@ async function salvarDaca() {
     if (!r) return null;
     return {
       daca_record_id: rec.id, assignment_id: r.assignment_id, bloco: a.bloco,
-      school_name: r.school_short_name || r.school_name, class_name: r.class_name,
+      school_name: nomeCurto(r.school_name, r.school_short_name), class_name: r.class_name,
       class_period: r.class_period, discipline_name: r.discipline_name,
       lesson_count: r.lesson_count,
       hec: a.hec ? parseInt(a.hec, 10) : 0,
       ha: a.ha ? parseInt(a.ha, 10) : 0,
+      hll: a.hll ? parseInt(a.hll, 10) : 0,
       total_sm: a.total_sm || null,
     };
   }).filter(Boolean);
@@ -526,6 +697,7 @@ async function salvarDaca() {
       teacher_id: teacherAtualId, assignment_id: r.assignment_id, bloco: r.bloco,
       hec: r.hec ? parseInt(r.hec, 10) : 0,
       ha: r.ha ? parseInt(r.ha, 10) : 0,
+      hll: r.hll ? parseInt(r.hll, 10) : 0,
       total_sm: r.total_sm || null,
       updated_at: new Date().toISOString(),
     }));
@@ -573,7 +745,7 @@ async function verDaca(id) {
       discipline_name: r.discipline_name, lesson_count: r.lesson_count,
     };
     dd[r.bloco].push(item);
-    mm[`${r.assignment_id}|${r.bloco}`] = { hec: r.hec, ha: r.ha, total_sm: r.total_sm };
+    mm[`${r.assignment_id}|${r.bloco}`] = { hec: r.hec, ha: r.ha, hll: r.hll, total_sm: r.total_sm };
   });
 
   const ctx = {
