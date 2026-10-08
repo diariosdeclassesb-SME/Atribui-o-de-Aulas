@@ -46,12 +46,10 @@
   .field-doc:focus { background: #fef3c7; outline: 1px solid #f59e0b; }
   .field-doc.auto { background: #f3f4f6; }
 
-  /* Tabela por bloco */
   table.bloco { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 9px; table-layout: fixed; }
   table.bloco th, table.bloco td { border: 1px solid #000; padding: 1px 3px; vertical-align: middle; }
   table.bloco th { background: #f3f4f6; font-weight: 700; text-align: center; font-size: 8px; line-height: 1.15; }
 
-  /* Bloco vertical */
   td.bloco-label {
     writing-mode: vertical-rl;
     transform: rotate(180deg);
@@ -66,7 +64,6 @@
     letter-spacing: .3px;
   }
 
-  /* Subtítulo (Deixou / Assumiu) */
   td.subtitulo {
     background: #f3f4f6;
     text-align: center;
@@ -178,6 +175,29 @@
 const SUPABASE_URL = 'https://dflzprsopnwgobcxuqfu.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_HAMF9aaI6tEtztq4pXAVPw_PM_9wyad';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ============================================================
+// Tabela de regras de H.E.C / H.A / H.L.L.E / Total SM
+// Chave = total de aulas do bloco
+// ============================================================
+const REGRAS_HEC = {
+  16: { hec: 2, ha: 2, hlle: 5, total_sm: '25/125' },
+  18: { hec: 2, ha: 2, hlle: 6, total_sm: '28/140' },
+  20: { hec: 2, ha: 3, hlle: 6, total_sm: '31/155' },
+  21: { hec: 2, ha: 3, hlle: 6, total_sm: '32/160' },
+  23: { hec: 2, ha: 2, hlle: 8, total_sm: '35/175' },
+  24: { hec: 2, ha: 4, hlle: 7, total_sm: '37/185' },
+  25: { hec: 2, ha: 4, hlle: 8, total_sm: '39/195' },
+  26: { hec: 2, ha: 4, hlle: 8, total_sm: '40/200' },
+};
+
+function aplicarRegraHEC(totalAulas) {
+  return REGRAS_HEC[totalAulas] || null;
+}
+
+function isVazio(v) {
+  return v === null || v === undefined || v === '';
+}
 
 const MAPA_NOMES_CURTOS = {
   'Creche Municipal "Estudante Renato Cabral Pereira"': 'Creche I',
@@ -345,7 +365,7 @@ function renderDocumento(ctx) {
   const sec = settings.secretaria || 'SECRETARIA MUNICIPAL DE EDUCAÇÃO';
   const end = settings.endereco || 'Rua Independência, s/nº - Centro - Santa Branca – São Paulo – CEP: 12.380-000';
   const tel = settings.telefone || 'Tel: (12) 3972-1686 - 3972-3061';
-  const mail = settings.email || 'educacao@santabranca.sp.gov.br';
+  const mail = settings.email || 'semebranca@gmail.com';
   const logo = settings.logo_url;
   const logoHtml = logo
     ? `<img src="${esc(logo)}" alt="Brasão" onerror="this.style.display='none';this.parentNode.innerHTML='BRASÃO';">`
@@ -449,7 +469,9 @@ function renderTabelaBloco(rotulo, bloco, lista, mm, editavel, comThead, colgrou
   const totalLivre = totalSemanal;
   const totalSubs = 0;
 
-  // Agrupa por escola (nome curto)
+  // Aplica regra HEC pelo total do bloco
+  const regra = aplicarRegraHEC(totalSemanal);
+
   const grupos = {};
   (lista || []).forEach(r => {
     const nomeEscola = nomeCurto(r.school_name, r.school_short_name);
@@ -470,7 +492,6 @@ function renderTabelaBloco(rotulo, bloco, lista, mm, editavel, comThead, colgrou
       const turmas = grupos[escola];
       const primeira = i === 0;
 
-      // Lista de turmas separadas por vírgula, com abreviação (His.)/(Rel.)
       const turmasLabel = turmas.map(t => {
         const ab = abreviarDisciplina(t.discipline_name);
         return ab ? `${t.class_name} (${ab})` : t.class_name;
@@ -479,6 +500,18 @@ function renderTabelaBloco(rotulo, bloco, lista, mm, editavel, comThead, colgrou
       const key = `${turmas[0].assignment_id}|${bloco}`;
       const m = mm[key] || { hec: '', ha: '', hll: '', total_sm: '' };
       const val = v => v === null || v === undefined || v === '' ? '' : v;
+
+      // Aplica regra na primeira linha, se os campos estiverem vazios
+      let hecVal = m.hec;
+      let haVal = m.ha;
+      let hllVal = m.hll;
+      let totalSmVal = m.total_sm;
+      if (primeira && regra) {
+        if (isVazio(hecVal)) hecVal = regra.hec;
+        if (isVazio(haVal)) haVal = regra.ha;
+        if (isVazio(hllVal)) hllVal = regra.hlle;
+        if (isVazio(totalSmVal)) totalSmVal = regra.total_sm;
+      }
 
       const colM = primeira ? totais.M || '' : '';
       const colT = primeira ? totais.T || '' : '';
@@ -501,10 +534,10 @@ function renderTabelaBloco(rotulo, bloco, lista, mm, editavel, comThead, colgrou
         <td style="text-align:center;">${colLivre}</td>
         <td style="text-align:center;">${colSubs}</td>
         <td style="text-align:center;">${colAulasSemanais}</td>
-        <td>${inputEdit('hec', m.hec)}</td>
-        <td>${inputEdit('ha', m.ha)}</td>
-        <td>${inputEdit('hll', m.hll)}</td>
-        <td>${inputEdit('total_sm', m.total_sm)}</td>
+        <td>${inputEdit('hec', hecVal)}</td>
+        <td>${inputEdit('ha', haVal)}</td>
+        <td>${inputEdit('hll', hllVal)}</td>
+        <td>${inputEdit('total_sm', totalSmVal)}</td>
         <td><div class="assinatura-por-linha"></div></td>
       </tr>`;
     }).join('');
@@ -522,6 +555,10 @@ function renderTabelaBlocoSubstituicao(deixou, assumiu, mm, editavel, colgroupHt
   const totAssumiu = totaisPorPeriodo(assumiu || []);
   const totalAulasDeixou = (deixou || []).reduce((s, r) => s + (r.lesson_count || 0), 0);
   const totalAulasAssumiu = (assumiu || []).reduce((s, r) => s + (r.lesson_count || 0), 0);
+
+  // Regras aplicadas a cada sub-bloco
+  const regraDeixou = aplicarRegraHEC(totalAulasDeixou);
+  const regraAssumiu = aplicarRegraHEC(totalAulasAssumiu);
 
   function agruparPorEscola(lista) {
     const grupos = {};
@@ -556,6 +593,19 @@ function renderTabelaBlocoSubstituicao(deixou, assumiu, mm, editavel, colgroupHt
       const key = `${turmas[0].assignment_id}|deixou`;
       const m = mm[key] || { hec: '', ha: '', hll: '', total_sm: '' };
       const val = v => v === null || v === undefined || v === '' ? '' : v;
+
+      // Aplica regra na primeira linha do sub-bloco
+      let hecVal = m.hec;
+      let haVal = m.ha;
+      let hllVal = m.hll;
+      let totalSmVal = m.total_sm;
+      if (primeira && regraDeixou) {
+        if (isVazio(hecVal)) hecVal = regraDeixou.hec;
+        if (isVazio(haVal)) haVal = regraDeixou.ha;
+        if (isVazio(hllVal)) hllVal = regraDeixou.hlle;
+        if (isVazio(totalSmVal)) totalSmVal = regraDeixou.total_sm;
+      }
+
       const inputEdit = (campo, valor) => editavel
         ? `<input class="field-edit" type="text" data-key="${key}" data-campo="${campo}" value="${val(valor)}">`
         : `<span style="font-size:9px;">${val(valor) || ''}</span>`;
@@ -569,10 +619,10 @@ function renderTabelaBlocoSubstituicao(deixou, assumiu, mm, editavel, colgroupHt
         <td style="text-align:center;"></td>
         <td style="text-align:center;"></td>
         <td style="text-align:center;">${primeira ? (totalAulasDeixou || '') : ''}</td>
-        <td>${inputEdit('hec', m.hec)}</td>
-        <td>${inputEdit('ha', m.ha)}</td>
-        <td>${inputEdit('hll', m.hll)}</td>
-        <td>${inputEdit('total_sm', m.total_sm)}</td>
+        <td>${inputEdit('hec', hecVal)}</td>
+        <td>${inputEdit('ha', haVal)}</td>
+        <td>${inputEdit('hll', hllVal)}</td>
+        <td>${inputEdit('total_sm', totalSmVal)}</td>
         <td><div class="assinatura-por-linha"></div></td>
       </tr>`);
     });
@@ -594,6 +644,19 @@ function renderTabelaBlocoSubstituicao(deixou, assumiu, mm, editavel, colgroupHt
       const key = `${turmas[0].assignment_id}|assumiu`;
       const m = mm[key] || { hec: '', ha: '', hll: '', total_sm: '' };
       const val = v => v === null || v === undefined || v === '' ? '' : v;
+
+      // Aplica regra na primeira linha do sub-bloco
+      let hecVal = m.hec;
+      let haVal = m.ha;
+      let hllVal = m.hll;
+      let totalSmVal = m.total_sm;
+      if (primeira && regraAssumiu) {
+        if (isVazio(hecVal)) hecVal = regraAssumiu.hec;
+        if (isVazio(haVal)) haVal = regraAssumiu.ha;
+        if (isVazio(hllVal)) hllVal = regraAssumiu.hlle;
+        if (isVazio(totalSmVal)) totalSmVal = regraAssumiu.total_sm;
+      }
+
       const inputEdit = (campo, valor) => editavel
         ? `<input class="field-edit" type="text" data-key="${key}" data-campo="${campo}" value="${val(valor)}">`
         : `<span style="font-size:9px;">${val(valor) || ''}</span>`;
@@ -607,10 +670,10 @@ function renderTabelaBlocoSubstituicao(deixou, assumiu, mm, editavel, colgroupHt
         <td style="text-align:center;"></td>
         <td style="text-align:center;">${primeira ? (totalAulasAssumiu || '') : ''}</td>
         <td style="text-align:center;">${primeira ? (totalAulasAssumiu || '') : ''}</td>
-        <td>${inputEdit('hec', m.hec)}</td>
-        <td>${inputEdit('ha', m.ha)}</td>
-        <td>${inputEdit('hll', m.hll)}</td>
-        <td>${inputEdit('total_sm', m.total_sm)}</td>
+        <td>${inputEdit('hec', hecVal)}</td>
+        <td>${inputEdit('ha', haVal)}</td>
+        <td>${inputEdit('hll', hllVal)}</td>
+        <td>${inputEdit('total_sm', totalSmVal)}</td>
         <td><div class="assinatura-por-linha"></div></td>
       </tr>`);
     });
