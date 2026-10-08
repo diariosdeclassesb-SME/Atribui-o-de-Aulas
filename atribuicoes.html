@@ -17,7 +17,7 @@
   header h1 { font-size: 18px; margin: 0; }
   header nav a { color: var(--text); text-decoration: none; margin-right: 16px; font-size: 14px; }
   header nav a.active { color: var(--primary); font-weight: 600; }
-  .container { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+  .container { max-width: 1280px; margin: 24px auto; padding: 0 16px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
   .card h2 { font-size: 15px; margin: 0 0 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
   .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; align-items: end; }
@@ -25,28 +25,129 @@
   input, select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white; }
   button.btn { padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap; }
   .btn-primary { background: var(--primary); color: white; } .btn-primary:hover { background: var(--primary-dark); }
-  .btn-warning { background: var(--warning); color: white; }
-  .btn-success { background: var(--success); color: white; }
-  .btn-sm { padding: 4px 10px; font-size: 12px; }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
-  th { background: #f9fafb; font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; }
-  tr:last-child td { border-bottom: none; }
-  .empty { color: var(--muted); font-size: 14px; padding: 20px; text-align: center; }
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
-  .badge-free { background: #d1fae5; color: #065f46; }
-  .badge-taken { background: #dbeafe; color: #1e40af; }
-  .badge-left { background: #fed7aa; color: #9a3412; }
-  .badge-substituted { background: #e9d5ff; color: #6b21a8; }
-  .toast { position: fixed; bottom: 20px; right: 20px; background: #111827; color: white; padding: 12px 20px; border-radius: 6px; font-size: 14px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 9999; }
-  .toast.show { opacity: 1; } .toast.error { background: var(--danger); }
+  .btn-warning { background: var(--warning); color: white; } .btn-warning:hover { background: #b45309; }
+  .btn-success { background: var(--success); color: white; } .btn-success:hover { background: #047857; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  /* Resumo */
   .resumo { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 8px; }
   .resumo-item { background: #f9fafb; border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; }
   .resumo-item .label { font-size: 11px; color: var(--muted); text-transform: uppercase; }
   .resumo-item .valor { font-size: 20px; font-weight: 700; color: var(--primary); }
   .professor-nome { font-size: 18px; font-weight: 700; margin: 0; }
   .professor-disciplina { color: var(--muted); font-size: 13px; margin: 2px 0 0; }
+
+  /* Aviso de Religiosidade */
   .aviso-rel { background: #fef3c7; color: #92400e; padding: 8px 12px; border-radius: 6px; font-size: 12px; margin-bottom: 12px; }
+
+  /* ============ BLOCO DE ESCOLA ============ */
+  .escola-bloco {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .escola-bloco-header {
+    background: #f3f4f6;
+    padding: 10px 16px;
+    font-weight: 700;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border);
+    color: #111;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .escola-bloco-header .contagem {
+    font-weight: 500;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .escola-bloco-body {
+    padding: 14px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* ============ CARTÃO DE TURMA ============ */
+  .turma-card {
+    width: 190px;
+    min-height: 150px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: #fff;
+    transition: box-shadow .15s, transform .15s;
+    position: relative;
+  }
+  .turma-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,.08);
+  }
+  .turma-card .turma {
+    font-weight: 700;
+    font-size: 15px;
+    color: #111;
+    margin-bottom: 2px;
+  }
+  .turma-card .disciplina {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .turma-card .info {
+    font-size: 12px;
+    color: #374151;
+    margin-bottom: 8px;
+  }
+  .turma-card .info span {
+    display: inline-block;
+    background: #f3f4f6;
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-right: 4px;
+    margin-bottom: 3px;
+  }
+  .turma-card .badge-wrap {
+    margin: 6px 0 8px;
+    min-height: 22px;
+    display: flex;
+    align-items: center;
+  }
+  .turma-card .btn-wrap {
+    margin-top: auto;
+  }
+  .turma-card .btn-wrap .btn {
+    width: 100%;
+  }
+  .turma-card .texto-info {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    padding: 6px 0;
+  }
+
+  /* Bordas coloridas à esquerda por estado */
+  .turma-card.estado-livre { border-left: 4px solid #10b981; }
+  .turma-card.estado-atribuida { border-left: 4px solid #3b82f6; }
+  .turma-card.estado-deixada { border-left: 4px solid #f59e0b; }
+  .turma-card.estado-substituicao { border-left: 4px solid #8b5cf6; }
+
+  /* Badge */
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; line-height: 1.3; }
+  .badge-free { background: #d1fae5; color: #065f46; }
+  .badge-taken { background: #dbeafe; color: #1e40af; }
+  .badge-left { background: #fed7aa; color: #9a3412; }
+  .badge-substituted { background: #e9d5ff; color: #6b21a8; }
+
+  .empty-bloco { color: var(--muted); padding: 20px; text-align: center; font-size: 14px; }
+
+  .toast { position: fixed; bottom: 20px; right: 20px; background: #111827; color: white; padding: 12px 20px; border-radius: 6px; font-size: 14px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 9999; }
+  .toast.show { opacity: 1; } .toast.error { background: var(--danger); }
 </style>
 </head>
 <body>
@@ -107,22 +208,9 @@
     <div id="aviso-rel" class="aviso-rel" style="display:none;">
       Incluindo também as ofertas de <strong>Religiosidade</strong>, pois professores de História assumem essas aulas.
     </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Escola</th>
-          <th>Turma</th>
-          <th>Disciplina</th>
-          <th>Período</th>
-          <th>Aulas</th>
-          <th>Estado</th>
-          <th style="width:200px">Ação</th>
-        </tr>
-      </thead>
-      <tbody id="lista-turmas">
-        <tr><td colspan="7" class="empty">Selecione uma disciplina para ver as turmas.</td></tr>
-      </tbody>
-    </table>
+    <div id="blocos-escolas">
+      <div class="empty-bloco">Selecione uma disciplina para ver as turmas.</div>
+    </div>
   </div>
 
 </div>
@@ -154,6 +242,25 @@ async function logout() {
   window.location.href = 'index.html';
 }
 
+const MAPA_NOMES_CURTOS = {
+  'Creche Municipal "Estudante Renato Cabral Pereira"': 'Creche I',
+  'Creche Municipal "Vereador Benedito Cantinho Braga Filho – Diquito Braga"': 'Creche II',
+  'Creche Municipal "Vereador Benedito Cantinho Braga Filho - Diquito Braga"': 'Creche II',
+  'E.M.E.F. "Barão de Santa Branca"': 'Barão',
+  'E.M.E.F. "Prof.ª Palmyra Martins Rosa Perillo"': 'Palmyra',
+  'E.M.E.F. "Prof.ª Benedita Pereira de Albuquerque"': 'Benedita',
+  'E.M.E.F. "Prof.ª Francisca Rosa Gomes"': 'Rosa Gomes',
+  'E.M.E.F. "Prof.ª Isaura Martins Rosa de Siqueira"': 'Isaura',
+  'E.M.E.I. "Terezinha do Menino Jesus Porto Wuó"': 'Terezinha',
+  'E.M.E.I.F (R) "Prof.ª Maria Apparecida Fonseca"': 'Fonseca',
+  'E.M.E.I.F (R) "Prof.ª Sylvia Cantinho Braga Campos"': 'Sylvia',
+};
+function nomeCurto(nomeCompleto, shortName) {
+  if (shortName && shortName.trim()) return shortName.trim();
+  if (MAPA_NOMES_CURTOS[nomeCompleto]) return MAPA_NOMES_CURTOS[nomeCompleto];
+  return nomeCompleto;
+}
+
 let disciplinas = [], professores = [], ofertas = [], assignments = [], escolas = [];
 let teacherMap = {};
 
@@ -161,7 +268,7 @@ async function carregarTudo() {
   const [d, p, o, a, e] = await Promise.all([
     supabaseClient.from('disciplines').select('*').order('name'),
     supabaseClient.from('teachers').select('*').order('full_name'),
-    supabaseClient.from('class_disciplines').select('*, classes(id, name, period, school_id, schools(id, name)), disciplines(name)'),
+    supabaseClient.from('class_disciplines').select('*, classes(id, name, period, school_id, schools(id, name, short_name)), disciplines(name)'),
     supabaseClient.from('assignments').select('*').order('created_at', { ascending: false }),
     supabaseClient.from('schools').select('*').order('name'),
   ]);
@@ -189,7 +296,7 @@ function preencherDisciplinas() {
 function preencherEscolas() {
   const atual = $('filtro-escola').value;
   $('filtro-escola').innerHTML = '<option value="">Todas</option>' +
-    escolas.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
+    escolas.map(e => `<option value="${e.id}">${esc(nomeCurto(e.name, e.short_name))} — ${esc(e.name)}</option>`).join('');
   if (atual) $('filtro-escola').value = atual;
 }
 
@@ -214,6 +321,16 @@ function estadoOferta(classDisciplineId) {
   return { status: 'Deixada', assignment: maisRecente };
 }
 
+// Ordem dos períodos: Manhã, Tarde, Noite, Integral
+function ordemPeriodo(p) {
+  const s = (p || '').toLowerCase();
+  if (s.startsWith('manh')) return 1;
+  if (s.startsWith('tard')) return 2;
+  if (s.startsWith('noit')) return 3;
+  if (s.startsWith('integ')) return 4;
+  return 5;
+}
+
 function renderizar() {
   const discId = $('filtro-disciplina').value;
   const schoolId = $('filtro-escola').value;
@@ -222,7 +339,6 @@ function renderizar() {
 
   renderizarResumo(profId);
 
-  // Se disciplina for História, incluir Religiosidade também
   const disciplinaSelecionada = disciplinas.find(d => d.id === discId);
   const discIds = discId ? [discId] : [];
   let incluindoRel = false;
@@ -233,67 +349,116 @@ function renderizar() {
   $('aviso-rel').style.display = incluindoRel ? 'block' : 'none';
 
   if (!discId) {
-    $('lista-turmas').innerHTML = '<tr><td colspan="7" class="empty">Selecione uma disciplina para ver as turmas.</td></tr>';
+    $('blocos-escolas').innerHTML = '<div class="empty-bloco">Selecione uma disciplina para ver as turmas.</div>';
     return;
   }
 
   let lista = ofertas.filter(o => discIds.includes(o.discipline_id));
   if (schoolId) lista = lista.filter(o => o.classes?.school_id === schoolId);
 
-  lista.sort((a, b) => {
-    const sa = a.classes?.schools?.name || '';
-    const sb = b.classes?.schools?.name || '';
-    if (sa !== sb) return sa.localeCompare(sb);
-    return (a.classes?.name || '').localeCompare(b.classes?.name || '');
-  });
-
   if (lista.length === 0) {
-    $('lista-turmas').innerHTML = '<tr><td colspan="7" class="empty">Nenhuma turma encontrada com esses filtros.</td></tr>';
+    $('blocos-escolas').innerHTML = '<div class="empty-bloco">Nenhuma turma encontrada com esses filtros.</div>';
     return;
   }
 
-  $('lista-turmas').innerHTML = lista.map(o => {
-    const estado = estadoOferta(o.id);
-    const school = esc(o.classes?.schools?.name || '—');
-    const turma = esc(o.classes?.name || '—');
-    const periodo = esc(o.classes?.period || '—');
-    const disciplina = esc(o.disciplines?.name || '—');
+  // Agrupa por escola
+  const grupos = {};
+  lista.forEach(o => {
+    const escolaId = o.classes?.school_id;
+    if (!escolaId) return;
+    if (!grupos[escolaId]) grupos[escolaId] = [];
+    grupos[escolaId].push(o);
+  });
 
-    let badge = '', acao = '';
+  // Ordena escolas pelo nome curto
+  const idsOrdenados = Object.keys(grupos).sort((a, b) => {
+    const ea = escolas.find(e => e.id === a);
+    const eb = escolas.find(e => e.id === b);
+    const ca = nomeCurto(ea?.name, ea?.short_name) || '';
+    const cb = nomeCurto(eb?.name, eb?.short_name) || '';
+    return ca.localeCompare(cb);
+  });
 
-    if (estado.status === 'Disponível') {
-      badge = '<span class="badge badge-free">Disponível</span>';
-      if (fase === 'Substituição') {
-        acao = '<span style="color:var(--muted);font-size:12px;">Aguardando alguém deixar</span>';
-      } else {
-        acao = `<button class="btn btn-primary btn-sm" onclick="atribuir('${o.id}')">Atribuir</button>`;
-      }
-    } else if (estado.status === 'Atribuída') {
-      const nome = teacherMap[estado.assignment.teacher_id]?.full_name || '—';
-      const tipo = estado.assignment.assignment_type;
-      const corBadge = tipo === 'Substituição' ? 'badge-substituted' : 'badge-taken';
-      badge = `<span class="badge ${corBadge}">${esc(tipo)}: ${esc(nome)}</span>`;
-      acao = `<button class="btn btn-warning btn-sm" onclick="deixar('${estado.assignment.id}')">Deixou a turma</button>`;
-    } else if (estado.status === 'Deixada') {
-      const nome = teacherMap[estado.assignment.teacher_id]?.full_name || '—';
-      badge = `<span class="badge badge-left">Deixada por ${esc(nome)}</span>`;
-      if (fase === 'Substituição') {
-        acao = `<button class="btn btn-success btn-sm" onclick="assumirSubstituto('${o.id}', '${estado.assignment.id}')">Assumir</button>`;
-      } else {
-        acao = '<span style="color:var(--muted);font-size:12px;">Mude para Fase 3 para assumir</span>';
-      }
-    }
+  // Renderiza blocos
+  $('blocos-escolas').innerHTML = idsOrdenados.map(escolaId => {
+    const escola = escolas.find(e => e.id === escolaId);
+    const turmas = grupos[escolaId].slice();
 
-    return `<tr>
-      <td>${school}</td>
-      <td>${turma}</td>
-      <td>${disciplina}</td>
-      <td>${periodo}</td>
-      <td>${o.lesson_count}</td>
-      <td>${badge}</td>
-      <td>${acao}</td>
-    </tr>`;
+    // Ordena turmas: período (M→T→N→I) e depois nome da turma
+    turmas.sort((a, b) => {
+      const pa = ordemPeriodo(a.classes?.period);
+      const pb = ordemPeriodo(b.classes?.period);
+      if (pa !== pb) return pa - pb;
+      return (a.classes?.name || '').localeCompare(b.classes?.name || '');
+    });
+
+    const cartoes = turmas.map(o => renderCartao(o, fase)).join('');
+
+    return `
+      <div class="escola-bloco">
+        <div class="escola-bloco-header">
+          <span>${esc(escola?.name || '—')}</span>
+          <span class="contagem">${turmas.length} turma${turmas.length > 1 ? 's' : ''}</span>
+        </div>
+        <div class="escola-bloco-body">
+          ${cartoes}
+        </div>
+      </div>`;
   }).join('');
+}
+
+function renderCartao(o, fase) {
+  const estado = estadoOferta(o.id);
+  const turma = esc(o.classes?.name || '—');
+  const disciplina = esc(o.disciplines?.name || '—');
+  const periodo = esc(o.classes?.period || '—');
+  const aulas = o.lesson_count || 0;
+
+  let badge = '', acao = '', classeEstado = 'estado-livre';
+
+  if (estado.status === 'Disponível') {
+    badge = '<span class="badge badge-free">Disponível</span>';
+    classeEstado = 'estado-livre';
+    if (fase === 'Substituição') {
+      acao = '<div class="texto-info">Aguardando alguém deixar</div>';
+    } else {
+      acao = `<button class="btn btn-primary btn-sm" onclick="atribuir('${o.id}')">Atribuir</button>`;
+    }
+  } else if (estado.status === 'Atribuída') {
+    const nome = teacherMap[estado.assignment.teacher_id]?.full_name || '—';
+    const tipo = estado.assignment.assignment_type;
+    if (tipo === 'Substituição') {
+      badge = `<span class="badge badge-substituted">Substituição: ${esc(nome)}</span>`;
+      classeEstado = 'estado-substituicao';
+    } else {
+      badge = `<span class="badge badge-taken">${esc(tipo)}: ${esc(nome)}</span>`;
+      classeEstado = 'estado-atribuida';
+    }
+    acao = `<button class="btn btn-warning btn-sm" onclick="deixar('${estado.assignment.id}')">Deixou a turma</button>`;
+  } else if (estado.status === 'Deixada') {
+    const nome = teacherMap[estado.assignment.teacher_id]?.full_name || '—';
+    badge = `<span class="badge badge-left">Deixada por ${esc(nome)}</span>`;
+    classeEstado = 'estado-deixada';
+    if (fase === 'Substituição') {
+      acao = `<button class="btn btn-success btn-sm" onclick="assumirSubstituto('${o.id}', '${estado.assignment.id}')">Assumir</button>`;
+    } else {
+      acao = '<div class="texto-info">Mude para Fase 3</div>';
+    }
+  }
+
+  return `
+    <div class="turma-card ${classeEstado}">
+      <div>
+        <div class="turma">${turma}</div>
+        <div class="disciplina">${disciplina}</div>
+        <div class="info">
+          <span>${periodo}</span>
+          <span>${aulas} aula${aulas !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="badge-wrap">${badge}</div>
+      </div>
+      <div class="btn-wrap">${acao}</div>
+    </div>`;
 }
 
 function renderizarResumo(profId) {
