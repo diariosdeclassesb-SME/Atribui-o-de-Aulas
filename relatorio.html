@@ -5,68 +5,96 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Relatório Geral — Sistema de Atribuição de Aulas</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
-  :root { --primary: #2563eb; --primary-dark: #1e40af; --bg: #f3f4f6; --card: #fff; --border: #e5e7eb; --text: #111827; --muted: #6b7280; }
+  :root { --primary: #2563eb; --primary-dark: #1e40af; --bg: #f3f4f6; --card: #fff; --border: #e5e7eb; --text: #111827; --muted: #6b7280; --green: #059669; --red: #dc2626; --orange: #d97706; --purple: #7c3aed; }
   * { box-sizing: border-box; }
   body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: var(--bg); color: var(--text); }
   header { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
   header h1 { font-size: 18px; margin: 0; }
   header nav a { color: var(--text); text-decoration: none; margin-right: 16px; font-size: 14px; }
   header nav a.active { color: var(--primary); font-weight: 600; }
-  .container { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+  .container { max-width: 1300px; margin: 24px auto; padding: 0 16px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
   .filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end; }
   label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
   input, select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white; }
   .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
-  .btn-primary { background: var(--primary); color: white; }
-  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-primary { background: var(--primary); color: white; } .btn-primary:hover { background: var(--primary-dark); }
   .btn-secondary { background: #e5e7eb; color: #111; }
+
+  .rel-header { text-align: center; margin-bottom: 20px; }
+  .rel-header h2 { margin: 0 0 4px; font-size: 18px; }
+  .rel-header p { margin: 0; color: var(--muted); font-size: 13px; }
+
+  .bloco-totais { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .totais-card { background: #f9fafb; border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+  .totais-card h3 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; color: var(--muted); letter-spacing: .5px; }
+  .totais-card .linha { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0; font-size: 14px; }
+  .totais-card .linha .label { color: #374151; }
+  .totais-card .linha .valor { font-weight: 700; font-size: 18px; }
+  .totais-card .linha .valor.pos { color: var(--green); }
+  .totais-card .linha .valor.neg { color: var(--red); }
+  .totais-card .linha .valor.neutro { color: var(--primary); }
+  .totais-card .linha .valor.warn { color: var(--orange); }
+
+  .graficos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  @media (max-width: 800px) { .graficos-grid { grid-template-columns: 1fr; } }
+  .grafico-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+  .grafico-card h3 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; color: var(--muted); letter-spacing: .5px; }
+  .grafico-card canvas { max-height: 280px; }
+
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
   th { background: #f9fafb; font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; }
   .right { text-align: right; } .center { text-align: center; }
   .empty { color: var(--muted); padding: 30px; text-align: center; }
-  .totais-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
-  .totais-grid .item { background: #f9fafb; border-radius: 6px; padding: 12px 16px; }
-  .totais-grid .label { font-size: 11px; color: var(--muted); text-transform: uppercase; }
-  .totais-grid .valor { font-size: 22px; font-weight: 700; color: var(--primary); }
 
   tr.prof-row { cursor: pointer; }
   tr.prof-row:hover { background: #f9fafb; }
-  tr.prof-row .toggle {
-    display: inline-block; width: 16px; color: var(--primary);
-    font-weight: 700; transition: transform .2s;
-  }
+  tr.prof-row .toggle { display: inline-block; width: 16px; color: var(--primary); font-weight: 700; transition: transform .2s; }
   tr.prof-row.expanded .toggle { transform: rotate(90deg); }
-
   tr.detail-row { display: none; background: #f9fafb; }
   tr.detail-row.show { display: table-row; }
-  tr.detail-row td { padding: 0; border-bottom: 1px solid var(--border); }
+  tr.detail-row td { padding: 0; }
   .detail-inner { padding: 12px 20px 16px 40px; }
-  .detail-inner h4 {
-    margin: 0 0 8px; font-size: 12px; color: var(--muted);
-    text-transform: uppercase; letter-spacing: .5px;
-  }
+  .detail-inner h4 { margin: 8px 0; font-size: 12px; color: var(--muted); text-transform: uppercase; }
   .detail-inner table { font-size: 13px; background: white; border-radius: 6px; overflow: hidden; }
-  .detail-inner th, .detail-inner td { padding: 6px 10px; }
-  .badge {
-    display: inline-block; padding: 2px 8px; border-radius: 4px;
-    font-size: 11px; font-weight: 600;
-  }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .badge-ok { background: #d1fae5; color: #065f46; }
+  .badge-falta { background: #fee2e2; color: #991b1b; }
   .badge-titular { background: #dbeafe; color: #1e40af; }
   .badge-carga { background: #fef3c7; color: #92400e; }
   .badge-subst { background: #ede9fe; color: #5b21b6; }
+
+  .secao-titulo { font-size: 15px; font-weight: 700; margin: 24px 0 12px; color: #111; }
+
+  /* Turmas não atribuídas */
+  .faltantes-escola { margin-bottom: 14px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .faltantes-escola-header { background: #fef2f2; padding: 10px 14px; font-weight: 700; font-size: 13px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .faltantes-escola-header .qtd { font-weight: 500; font-size: 12px; color: var(--red); }
+  .faltantes-escola-body table { font-size: 13px; }
+
+  /* Escola Sede por Professor */
+  .escola-sede-bloco { margin-bottom: 14px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .escola-sede-header { background: #eff6ff; padding: 10px 14px; font-weight: 700; font-size: 13px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; color: #1e3a8a; }
+  .escola-sede-header .qtd { font-weight: 500; font-size: 12px; color: #1e40af; }
+  .escola-sede-body table { font-size: 13px; }
 
   @media print {
     @page { size: A4 landscape; margin: 10mm; }
     header, .filtros, .no-print { display: none !important; }
     body { background: #fff; }
     .container { max-width: 100%; margin: 0; padding: 0; }
-    .card { border: none; padding: 0; }
+    .card { border: none; padding: 0; box-shadow: none; margin: 0; }
+    .graficos-grid { grid-template-columns: 1fr 1fr; }
+    .grafico-card { page-break-inside: avoid; }
+    .bloco-totais { page-break-inside: avoid; }
     tr.detail-row { display: table-row !important; }
+    .badge { border: 1px solid #999; }
   }
-  .toast { position: fixed; bottom: 20px; right: 20px; background: #111827; color: white; padding: 12px 20px; border-radius: 6px; font-size: 14px; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  .toast { position: fixed; bottom: 20px; right: 20px; background: #111827; color: white; padding: 12px 20px; border-radius: 6px; font-size: 14px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 9999; }
   .toast.show { opacity: 1; }
 </style>
 </head>
@@ -87,37 +115,81 @@
 <div class="container">
   <div class="card no-print">
     <div class="filtros">
-      <div><label>Escola</label><input id="f-escola" placeholder="Filtrar por escola" /></div>
+      <div><label>Escola</label><select id="f-escola"><option value="">Todas</option></select></div>
       <div>
         <label>Período</label>
         <select id="f-periodo">
-          <option value="">Todos</option><option>Manhã</option><option>Tarde</option>
-          <option>Noite</option><option>Integral</option>
+          <option value="">Todos</option>
+          <option>Manhã</option><option>Tarde</option><option>Noite</option><option>Integral</option>
         </select>
       </div>
+      <div><label>Disciplina</label><select id="f-disciplina"><option value="">Todas</option></select></div>
       <div><label>Professor</label><input id="f-professor" placeholder="Filtrar por nome" /></div>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <button class="btn btn-primary" onclick="carregarRelatorio()">Filtrar</button>
         <button class="btn btn-secondary" onclick="limparFiltros()">Limpar</button>
-        <button class="btn btn-secondary" onclick="expandirTodos()">Expandir todos</button>
         <button class="btn btn-secondary" onclick="window.print()">Imprimir</button>
       </div>
     </div>
   </div>
 
   <div class="card">
-    <h2 style="text-align:center;margin:0 0 4px;font-size:16px;">Prefeitura Municipal de Santa Branca</h2>
-    <p style="text-align:center;color:var(--muted);margin:0 0 20px;font-size:13px;">
-      Relatório Geral de Atribuições de Aulas — <span id="data-rel"></span>
-    </p>
-
-    <div class="totais-grid">
-      <div class="item"><div class="label">Professores</div><div class="valor" id="t-prof">0</div></div>
-      <div class="item"><div class="label">Turmas atribuídas</div><div class="valor" id="t-turmas">0</div></div>
-      <div class="item"><div class="label">Aulas</div><div class="valor" id="t-aulas">0</div></div>
-      <div class="item"><div class="label">Escolas</div><div class="valor" id="t-escolas">0</div></div>
+    <div class="rel-header">
+      <h2>Prefeitura Municipal de Santa Branca</h2>
+      <p>Relatório Geral de Atribuições de Aulas — <span id="data-rel"></span></p>
     </div>
 
+    <!-- TOTAIS -->
+    <div class="bloco-totais">
+      <div class="totais-card">
+        <h3>Professores</h3>
+        <div class="linha"><span class="label">Cadastrados</span><span class="valor neutro" id="t-prof-total">0</span></div>
+        <div class="linha"><span class="label">Atribuíram aulas</span><span class="valor pos" id="t-prof-atrib">0</span></div>
+        <div class="linha"><span class="label">Não atribuíram</span><span class="valor neg" id="t-prof-sem">0</span></div>
+      </div>
+      <div class="totais-card">
+        <h3>Turmas</h3>
+        <div class="linha"><span class="label">Disponíveis</span><span class="valor neutro" id="t-turmas-total">0</span></div>
+        <div class="linha"><span class="label">Atribuídas</span><span class="valor pos" id="t-turmas-atrib">0</span></div>
+        <div class="linha"><span class="label">Não atribuídas</span><span class="valor neg" id="t-turmas-falta">0</span></div>
+      </div>
+      <div class="totais-card">
+        <h3>Aulas</h3>
+        <div class="linha"><span class="label">Disponíveis</span><span class="valor neutro" id="t-aulas-total">0</span></div>
+        <div class="linha"><span class="label">Atribuídas</span><span class="valor pos" id="t-aulas-atrib">0</span></div>
+        <div class="linha"><span class="label">Sobrando</span><span class="valor warn" id="t-aulas-sobra">0</span></div>
+      </div>
+      <div class="totais-card">
+        <h3>Escolas</h3>
+        <div class="linha"><span class="label">Cadastradas</span><span class="valor neutro" id="t-escolas-total">0</span></div>
+        <div class="linha"><span class="label">Com turmas atribuídas</span><span class="valor pos" id="t-escolas-com">0</span></div>
+        <div class="linha"><span class="label">Com turmas faltando</span><span class="valor neg" id="t-escolas-falta">0</span></div>
+      </div>
+    </div>
+
+    <!-- GRÁFICOS -->
+    <div class="secao-titulo">Gráficos</div>
+    <div class="graficos-grid">
+      <div class="grafico-card">
+        <h3>Turmas atribuídas × não atribuídas</h3>
+        <canvas id="chart-turmas"></canvas>
+      </div>
+      <div class="grafico-card">
+        <h3>Professores que atribuíram × não atribuíram</h3>
+        <canvas id="chart-professores"></canvas>
+      </div>
+      <div class="grafico-card">
+        <h3>Top 10 professores por aulas atribuídas</h3>
+        <canvas id="chart-top-prof"></canvas>
+      </div>
+      <div class="grafico-card">
+        <h3>Turmas atribuídas por escola</h3>
+        <canvas id="chart-por-escola"></canvas>
+      </div>
+    </div>
+
+    <!-- TABELA DE PROFESSORES -->
+    <div class="secao-titulo">Professores</div>
     <table>
       <thead>
         <tr>
@@ -125,23 +197,36 @@
           <th>Professor</th>
           <th>Disciplina</th>
           <th>Escola Sede</th>
+          <th>Situação</th>
           <th class="center">Turmas</th>
           <th class="center">Aulas</th>
           <th class="center">Escolas</th>
         </tr>
       </thead>
       <tbody id="lista-rel">
-        <tr><td colspan="7" class="empty">Carregando...</td></tr>
+        <tr><td colspan="8" class="empty">Carregando...</td></tr>
       </tbody>
     </table>
+
+    <!-- ESCOLA SEDE POR PROFESSOR -->
+    <div class="secao-titulo">Escola Sede por Professor</div>
+    <div id="lista-escola-sede">
+      <div class="empty">Carregando...</div>
+    </div>
+
+    <!-- TURMAS NÃO ATRIBUÍDAS -->
+    <div class="secao-titulo">Turmas não atribuídas</div>
+    <div id="lista-faltantes">
+      <div class="empty">Carregando...</div>
+    </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-const SUPABASE_URL = 'https://dflzprsopnwgobcxuqfu.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_HAMF9aaI6tEtztq4pXAVPw_PM_9wyad';
+const SUPABASE_URL = 'COLE_AQUI_A_URL_DO_PROJETO_NOVO';
+const SUPABASE_ANON_KEY = 'COLE_AQUI_A_ANON_KEY_DO_PROJETO_NOVO';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const $ = (id) => document.getElementById(id);
@@ -163,141 +248,501 @@ async function logout() {
   window.location.href = 'index.html';
 }
 
-let detalhesCache = {}; // teacherId -> array de turmas
-let professoresComDados = [];
+const MAPA_NOMES_CURTOS = {
+  'Creche Municipal "Estudante Renato Cabral Pereira"': 'Creche I',
+  'Creche Municipal "Vereador Benedito Cantinho Braga Filho – Diquito Braga"': 'Creche II',
+  'Creche Municipal "Vereador Benedito Cantinho Braga Filho - Diquito Braga"': 'Creche II',
+  'E.M.E.F. "Barão de Santa Branca"': 'Barão',
+  'E.M.E.F. "Prof.ª Palmyra Martins Rosa Perillo"': 'Palmyra',
+  'E.M.E.F. "Prof.ª Benedita Pereira de Albuquerque"': 'Benedita',
+  'E.M.E.F. "Prof.ª Francisca Rosa Gomes"': 'Rosa Gomes',
+  'E.M.E.F. "Prof.ª Isaura Martins Rosa de Siqueira"': 'Isaura',
+  'E.M.E.I. "Terezinha do Menino Jesus Porto Wuó"': 'Terezinha',
+  'E.M.E.I.F (R) "Prof.ª Maria Apparecida Fonseca"': 'Fonseca',
+  'E.M.E.I.F (R) "Prof.ª Sylvia Cantinho Braga Campos"': 'Sylvia',
+};
+function nomeCurto(nome, shortName) {
+  if (shortName && shortName.trim()) return shortName.trim();
+  if (MAPA_NOMES_CURTOS[nome]) return MAPA_NOMES_CURTOS[nome];
+  return nome;
+}
 
-async function carregarRelatorio() {
-  const escola = $('f-escola').value.trim() || null;
+function ordemPeriodo(p) {
+  const s = (p || '').toLowerCase();
+  if (s.startsWith('manh')) return 1;
+  if (s.startsWith('tard')) return 2;
+  if (s.startsWith('noit')) return 3;
+  if (s.startsWith('integ')) return 4;
+  return 5;
+}
+
+const cache = { professores: [], escolas: [], disciplinas: [], ofertas: [], assignments: [] };
+const charts = {};
+let turmasPorProfessor = {};
+
+async function carregarDados() {
+  const [p, e, d, o, a] = await Promise.all([
+    supabaseClient.from('teachers').select('id, full_name, discipline_id, disciplines(name)').order('full_name'),
+    supabaseClient.from('schools').select('*').order('name'),
+    supabaseClient.from('disciplines').select('*').order('name'),
+    supabaseClient.from('class_disciplines').select('id, lesson_count, class_id, discipline_id, classes(id, name, period, school_id, schools(id, name, short_name)), disciplines(name)'),
+    supabaseClient.from('assignments').select('*'),
+  ]);
+  cache.professores = p.data || [];
+  cache.escolas = e.data || [];
+  cache.disciplinas = d.data || [];
+  cache.ofertas = o.data || [];
+  cache.assignments = a.data || [];
+
+  $('f-escola').innerHTML = '<option value="">Todas</option>' +
+    cache.escolas.map(e => `<option value="${e.id}">${esc(nomeCurto(e.name, e.short_name))}</option>`).join('');
+  $('f-disciplina').innerHTML = '<option value="">Todas</option>' +
+    cache.disciplinas.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('');
+}
+
+function estadoOferta(classDisciplineId) {
+  const daOferta = cache.assignments.filter(a => a.class_discipline_id === classDisciplineId);
+  if (daOferta.length === 0) return { status: 'Disponível' };
+  const ativo = daOferta.find(a => a.status === 'Ativo');
+  if (ativo) return { status: 'Atribuída', assignment: ativo };
+  return { status: 'Não atribuída' };
+}
+
+function carregarRelatorio() {
+  const escolaId = $('f-escola').value || null;
   const periodo = $('f-periodo').value || null;
-  const professor = $('f-professor').value.trim() || null;
+  const discId = $('f-disciplina').value || null;
+  const profFiltro = $('f-professor').value.trim().toLowerCase() || null;
 
-  const { data, error } = await supabaseClient.rpc('get_relatorio_geral', {
-    p_escola: escola, p_periodo: periodo, p_professor: professor,
+  let ofertas = cache.ofertas.slice();
+  if (escolaId) ofertas = ofertas.filter(o => o.classes?.school_id === escolaId);
+  if (periodo) ofertas = ofertas.filter(o => o.classes?.period === periodo);
+  if (discId) ofertas = ofertas.filter(o => o.discipline_id === discId);
+
+  let professores = cache.professores.slice();
+  if (discId) professores = professores.filter(p => p.discipline_id === discId);
+  if (profFiltro) professores = professores.filter(p => (p.full_name || '').toLowerCase().includes(profFiltro));
+
+  const ofertasEstado = ofertas.map(o => ({ ...o, estado: estadoOferta(o.id) }));
+
+  const turmasTotal = ofertasEstado.length;
+  const turmasAtrib = ofertasEstado.filter(o => o.estado.status === 'Atribuída').length;
+  const turmasFalta = turmasTotal - turmasAtrib;
+
+  const aulasTotal = ofertasEstado.reduce((s, o) => s + (o.lesson_count || 0), 0);
+  const aulasAtrib = ofertasEstado.filter(o => o.estado.status === 'Atribuída').reduce((s, o) => s + (o.lesson_count || 0), 0);
+  const aulasSobra = aulasTotal - aulasAtrib;
+
+  const ofertaIds = new Set(ofertasEstado.map(o => o.id));
+  const profsComAtrib = new Set(
+    cache.assignments
+      .filter(a => a.status === 'Ativo' && ofertaIds.has(a.class_discipline_id))
+      .map(a => a.teacher_id)
+  );
+  const profsFiltradosIds = new Set(professores.map(p => p.id));
+  const profsAtribuidos = [...profsComAtrib].filter(id => profsFiltradosIds.has(id)).length;
+  const profsSemAtribuir = professores.length - profsAtribuidos;
+
+  const escolasFiltradas = escolaId ? cache.escolas.filter(e => e.id === escolaId) : cache.escolas;
+  const escolasComAtrib = new Set(ofertasEstado.filter(o => o.estado.status === 'Atribuída').map(o => o.classes?.school_id)).size;
+  const escolasComFalta = new Set(ofertasEstado.filter(o => o.estado.status !== 'Atribuída').map(o => o.classes?.school_id)).size;
+
+  $('t-prof-total').textContent = professores.length;
+  $('t-prof-atrib').textContent = profsAtribuidos;
+  $('t-prof-sem').textContent = profsSemAtribuir;
+
+  $('t-turmas-total').textContent = turmasTotal;
+  $('t-turmas-atrib').textContent = turmasAtrib;
+  $('t-turmas-falta').textContent = turmasFalta;
+
+  $('t-aulas-total').textContent = aulasTotal;
+  $('t-aulas-atrib').textContent = aulasAtrib;
+  $('t-aulas-sobra').textContent = aulasSobra;
+
+  $('t-escolas-total').textContent = escolasFiltradas.length;
+  $('t-escolas-com').textContent = escolasComAtrib;
+  $('t-escolas-falta').textContent = escolasComFalta;
+
+  renderTabelaProfessores(professores, ofertasEstado);
+  renderEscolaSede(professores);
+  renderTurmasFaltantes(ofertasEstado);
+  renderGraficos({
+    turmasAtrib, turmasFalta,
+    profsAtribuidos, profsSemAtribuir,
+    professores, ofertasEstado,
   });
-  if (error) return toast(error.message);
-
-  const linhas = data || [];
-  professoresComDados = linhas;
-
-  $('lista-rel').innerHTML = linhas.length
-    ? linhas.map(r => `
-        <tr class="prof-row" data-teacher="${r.teacher_id}" onclick="toggleDetalhes('${r.teacher_id}', this)">
-          <td class="center"><span class="toggle">▶</span></td>
-          <td>${esc(r.teacher_name)}</td>
-          <td>${esc(r.discipline_name || '—')}</td>
-          <td>${esc(r.escola_sede)}</td>
-          <td class="center">${r.total_turmas}</td>
-          <td class="center">${r.total_aulas}</td>
-          <td class="center">${r.escolas_distintas}</td>
-        </tr>
-        <tr class="detail-row" id="detail-${r.teacher_id}">
-          <td colspan="7"><div class="detail-inner" id="detail-inner-${r.teacher_id}">
-            <em style="color:var(--muted);font-size:13px;">Clique para carregar as turmas...</em>
-          </div></td>
-        </tr>`).join('')
-    : '<tr><td colspan="7" class="empty">Nenhum registro encontrado.</td></tr>';
-
-  // Totais
-  $('t-prof').textContent = linhas.length;
-  $('t-turmas').textContent = linhas.reduce((s, r) => s + Number(r.total_turmas), 0);
-  $('t-aulas').textContent = linhas.reduce((s, r) => s + Number(r.total_aulas), 0);
-  $('t-escolas').textContent = new Set(linhas.map(r => r.escola_sede).filter(e => e !== '—')).size;
 
   $('data-rel').textContent = new Date().toLocaleDateString('pt-BR');
 }
 
-async function toggleDetalhes(teacherId, row) {
+// Calcula dados por professor: turmas, aulas, escolas, escola sede
+function calcularPorProfessor(professores, ofertasEstado) {
+  const porProfessor = {};
+  professores.forEach(p => {
+    porProfessor[p.id] = { turmas: [], aulas: 0, escolas: new Set(), escolaSede: null };
+  });
+
+  ofertasEstado.forEach(o => {
+    if (o.estado.status !== 'Atribuída') return;
+    const tid = o.estado.assignment.teacher_id;
+    if (!porProfessor[tid]) return;
+    porProfessor[tid].turmas.push(o);
+    porProfessor[tid].aulas += o.lesson_count || 0;
+    if (o.classes?.school_id) porProfessor[tid].escolas.add(o.classes.school_id);
+  });
+
+  Object.values(porProfessor).forEach(info => {
+    const cont = {};
+    info.turmas.forEach(t => {
+      const sid = t.classes?.school_id;
+      if (!sid) return;
+      cont[sid] = (cont[sid] || 0) + 1;
+    });
+    const ordenado = Object.keys(cont).sort((a, b) => {
+      if (cont[b] !== cont[a]) return cont[b] - cont[a];
+      return 0;
+    });
+    info.escolaSede = ordenado[0] || null;
+  });
+
+  return porProfessor;
+}
+
+function renderTabelaProfessores(professores, ofertasEstado) {
+  turmasPorProfessor = calcularPorProfessor(professores, ofertasEstado);
+
+  const linhas = professores.map(p => {
+    const info = turmasPorProfessor[p.id];
+    const escolaSede = cache.escolas.find(e => e.id === info.escolaSede);
+    const temAtrib = info.turmas.length > 0;
+    const badge = temAtrib
+      ? '<span class="badge badge-ok">Atribuiu</span>'
+      : '<span class="badge badge-falta">Sem atribuição</span>';
+    const escolaSedeNome = escolaSede ? nomeCurto(escolaSede.name, escolaSede.short_name) : '—';
+
+    return `
+      <tr class="prof-row" data-teacher="${p.id}" onclick="toggleDetalhes('${p.id}', this)">
+        <td class="center"><span class="toggle">▶</span></td>
+        <td>${esc(p.full_name)}</td>
+        <td>${esc(p.disciplines?.name || '—')}</td>
+        <td>${esc(escolaSedeNome)}</td>
+        <td>${badge}</td>
+        <td class="center">${info.turmas.length}</td>
+        <td class="center">${info.aulas}</td>
+        <td class="center">${info.escolas.size}</td>
+      </tr>
+      <tr class="detail-row" id="detail-${p.id}">
+        <td colspan="8"><div class="detail-inner" id="detail-inner-${p.id}">
+          <em style="color:var(--muted);font-size:13px;">Clique para carregar as turmas...</em>
+        </div></td>
+      </tr>`;
+  }).join('');
+
+  $('lista-rel').innerHTML = professores.length
+    ? linhas
+    : '<tr><td colspan="8" class="empty">Nenhum professor encontrado com esses filtros.</td></tr>';
+}
+
+function toggleDetalhes(teacherId, row) {
   const detailRow = document.getElementById('detail-' + teacherId);
   const isOpen = detailRow.classList.contains('show');
-
   if (isOpen) {
     detailRow.classList.remove('show');
     row.classList.remove('expanded');
     return;
   }
-
   row.classList.add('expanded');
   detailRow.classList.add('show');
 
-  // Carrega só uma vez
-  if (!detalhesCache[teacherId]) {
-    const { data, error } = await supabaseClient.rpc('get_teacher_daca', { p_teacher_id: teacherId });
-    if (error) {
-      document.getElementById('detail-inner-' + teacherId).innerHTML =
-        `<span style="color:#dc2626;">Erro: ${esc(error.message)}</span>`;
-      return;
-    }
-    detalhesCache[teacherId] = data || [];
-  }
-
-  renderDetalhes(teacherId, detalhesCache[teacherId]);
-}
-
-function renderDetalhes(teacherId, lista) {
+  const info = turmasPorProfessor[teacherId]?.turmas || [];
   const inner = document.getElementById('detail-inner-' + teacherId);
-
-  const blocoLabel = {
-    titular: 'Titular',
-    carga: 'Carga Suplementar',
-    deixou: 'Deixou a turma',
-    assumiu: 'Assumiu como substituto',
-  };
-  const blocoClasse = {
-    titular: 'badge-titular',
-    carga: 'badge-carga',
-    deixou: 'badge-subst',
-    assumiu: 'badge-subst',
-  };
-
-  if (lista.length === 0) {
+  if (info.length === 0) {
     inner.innerHTML = '<em style="color:var(--muted);font-size:13px;">Nenhuma turma atribuída.</em>';
     return;
   }
 
-  // Agrupa por bloco
-  const porBloco = { titular: [], carga: [], deixou: [], assumiu: [] };
-  lista.forEach(r => porBloco[r.bloco]?.push(r));
+  const grupos = { Titular: [], 'Carga Suplementar': [], 'Substituição': [] };
+  info.forEach(t => {
+    const tipo = t.estado.assignment.assignment_type;
+    if (grupos[tipo]) grupos[tipo].push(t);
+  });
 
-  const blocos = ['titular', 'carga', 'deixou', 'assumiu'].filter(b => porBloco[b].length > 0);
-
-  inner.innerHTML = blocos.map(bloco => `
-    <h4><span class="badge ${blocoClasse[bloco]}">${blocoLabel[bloco]}</span> — ${porBloco[bloco].length} turma(s)</h4>
-    <table>
-      <thead>
-        <tr>
-          <th>Escola</th>
-          <th>Turma</th>
-          <th>Período</th>
-          <th>Disciplina</th>
-          <th class="center">Aulas</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${porBloco[bloco].map(t => `
+  const classes = { 'Titular': 'badge-titular', 'Carga Suplementar': 'badge-carga', 'Substituição': 'badge-subst' };
+  let html = '';
+  ['Titular', 'Carga Suplementar', 'Substituição'].forEach(tipo => {
+    if (grupos[tipo].length === 0) return;
+    html += `<h4><span class="badge ${classes[tipo]}">${tipo}</span> — ${grupos[tipo].length} turma(s)</h4>
+      <table>
+        <thead><tr><th>Escola</th><th>Turma</th><th>Período</th><th>Disciplina</th><th class="center">Aulas</th></tr></thead>
+        <tbody>${grupos[tipo].map(t => `
           <tr>
-            <td>${esc(t.school_name)}</td>
-            <td>${esc(t.class_name)}</td>
-            <td>${esc(t.class_period)}</td>
-            <td>${esc(t.discipline_name)}</td>
+            <td>${esc(nomeCurto(t.classes?.schools?.name, t.classes?.schools?.short_name))}</td>
+            <td>${esc(t.classes?.name)}</td>
+            <td>${esc(t.classes?.period)}</td>
+            <td>${esc(t.disciplines?.name)}</td>
             <td class="center">${t.lesson_count}</td>
-          </tr>`).join('')}
-      </tbody>
-    </table>
-  `).join('');
+          </tr>`).join('')}</tbody>
+      </table>`;
+  });
+  inner.innerHTML = html;
 }
 
-async function expandirTodos() {
-  const rows = document.querySelectorAll('tr.prof-row');
-  for (const row of rows) {
-    const teacherId = row.dataset.teacher;
-    if (!document.getElementById('detail-' + teacherId).classList.contains('show')) {
-      await toggleDetalhes(teacherId, row);
-    }
+// ============================================================
+// ESCOLA SEDE POR PROFESSOR
+// ============================================================
+function renderEscolaSede(professores) {
+  // Só considera professores com escola sede (que atribuíram)
+  const porEscola = {};
+  professores.forEach(p => {
+    const info = turmasPorProfessor[p.id];
+    if (!info || !info.escolaSede || info.turmas.length === 0) return;
+    if (!porEscola[info.escolaSede]) porEscola[info.escolaSede] = [];
+    porEscola[info.escolaSede].push({ professor: p, info });
+  });
+
+  const ids = Object.keys(porEscola).sort((a, b) => {
+    const ea = cache.escolas.find(e => e.id === a);
+    const eb = cache.escolas.find(e => e.id === b);
+    const ca = nomeCurto(ea?.name, ea?.short_name) || '';
+    const cb = nomeCurto(eb?.name, eb?.short_name) || '';
+    return ca.localeCompare(cb);
+  });
+
+  if (ids.length === 0) {
+    $('lista-escola-sede').innerHTML = '<div class="empty">Nenhum professor com escola sede nos filtros atuais.</div>';
+    return;
   }
+
+  const html = ids.map(escolaId => {
+    const escola = cache.escolas.find(e => e.id === escolaId);
+    const lista = porEscola[escolaId].slice().sort((a, b) =>
+      (a.professor.full_name || '').localeCompare(b.professor.full_name || '')
+    );
+
+    const linhas = lista.map(({ professor, info }) => `
+      <tr>
+        <td>${esc(professor.full_name)}</td>
+        <td>${esc(professor.disciplines?.name || '—')}</td>
+        <td class="center">${info.turmas.length}</td>
+        <td class="center">${info.aulas}</td>
+        <td class="center">${info.escolas.size}</td>
+      </tr>`).join('');
+
+    return `
+      <div class="escola-sede-bloco">
+        <div class="escola-sede-header">
+          <span>${esc(nomeCurto(escola?.name, escola?.short_name))} — ${esc(escola?.name || '')}</span>
+          <span class="qtd">${lista.length} professor${lista.length > 1 ? 'es' : ''}</span>
+        </div>
+        <div class="escola-sede-body">
+          <table>
+            <thead>
+              <tr>
+                <th>Professor</th>
+                <th>Disciplina</th>
+                <th class="center">Turmas</th>
+                <th class="center">Aulas</th>
+                <th class="center">Escolas</th>
+              </tr>
+            </thead>
+            <tbody>${linhas}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }).join('');
+
+  $('lista-escola-sede').innerHTML = html;
+}
+
+// ============================================================
+// TURMAS NÃO ATRIBUÍDAS
+// ============================================================
+function renderTurmasFaltantes(ofertasEstado) {
+  const faltantes = ofertasEstado.filter(o => o.estado.status !== 'Atribuída');
+  if (faltantes.length === 0) {
+    $('lista-faltantes').innerHTML = '<div class="empty">Todas as turmas filtradas estão atribuídas. 🎉</div>';
+    return;
+  }
+
+  const grupos = {};
+  faltantes.forEach(o => {
+    const escolaId = o.classes?.school_id;
+    if (!escolaId) return;
+    if (!grupos[escolaId]) grupos[escolaId] = [];
+    grupos[escolaId].push(o);
+  });
+
+  const ids = Object.keys(grupos).sort((a, b) => {
+    const ea = cache.escolas.find(e => e.id === a);
+    const eb = cache.escolas.find(e => e.id === b);
+    const ca = nomeCurto(ea?.name, ea?.short_name) || '';
+    const cb = nomeCurto(eb?.name, eb?.short_name) || '';
+    return ca.localeCompare(cb);
+  });
+
+  const html = ids.map(escolaId => {
+    const escola = cache.escolas.find(e => e.id === escolaId);
+    const lista = grupos[escolaId].slice().sort((a, b) => {
+      const pa = ordemPeriodo(a.classes?.period);
+      const pb = ordemPeriodo(b.classes?.period);
+      if (pa !== pb) return pa - pb;
+      return (a.classes?.name || '').localeCompare(b.classes?.name || '');
+    });
+    const aulasFalta = lista.reduce((s, o) => s + (o.lesson_count || 0), 0);
+
+    const linhas = lista.map(o => `
+      <tr>
+        <td>${esc(o.classes?.name || '—')}</td>
+        <td>${esc(o.classes?.period || '—')}</td>
+        <td>${esc(o.disciplines?.name || '—')}</td>
+        <td class="center">${o.lesson_count}</td>
+      </tr>`).join('');
+
+    return `
+      <div class="faltantes-escola">
+        <div class="faltantes-escola-header">
+          <span>${esc(nomeCurto(escola?.name, escola?.short_name))} — ${esc(escola?.name || '')}</span>
+          <span class="qtd">${lista.length} turma${lista.length > 1 ? 's' : ''} · ${aulasFalta} aulas</span>
+        </div>
+        <div class="faltantes-escola-body">
+          <table>
+            <thead>
+              <tr>
+                <th>Turma</th>
+                <th>Período</th>
+                <th>Disciplina</th>
+                <th class="center">Aulas</th>
+              </tr>
+            </thead>
+            <tbody>${linhas}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }).join('');
+
+  $('lista-faltantes').innerHTML = html;
+}
+
+// ============================================================
+// GRÁFICOS
+// ============================================================
+function renderGraficos(dados) {
+  const { turmasAtrib, turmasFalta, profsAtribuidos, profsSemAtribuir, professores, ofertasEstado } = dados;
+
+  // Destrói gráficos anteriores
+  Object.values(charts).forEach(c => c.destroy());
+
+  // 1. Pizza turmas
+  charts.turmas = new Chart($('chart-turmas'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Atribuídas', 'Não atribuídas'],
+      datasets: [{
+        data: [turmasAtrib, turmasFalta],
+        backgroundColor: ['#10b981', '#ef4444'],
+        borderWidth: 2,
+        borderColor: '#fff',
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: { callbacks: { label: (c) => `${c.label}: ${c.raw}` } }
+      }
+    }
+  });
+
+  // 2. Pizza professores
+  charts.professores = new Chart($('chart-professores'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Atribuíram', 'Não atribuíram'],
+      datasets: [{
+        data: [profsAtribuidos, profsSemAtribuir],
+        backgroundColor: ['#3b82f6', '#f59e0b'],
+        borderWidth: 2,
+        borderColor: '#fff',
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+
+  // 3. Top 10 professores por aulas
+  const ranking = professores
+    .map(p => {
+      const info = turmasPorProfessor[p.id];
+      return { nome: p.full_name, aulas: info ? info.aulas : 0 };
+    })
+    .filter(r => r.aulas > 0)
+    .sort((a, b) => b.aulas - a.aulas)
+    .slice(0, 10);
+
+  charts.topProf = new Chart($('chart-top-prof'), {
+    type: 'bar',
+    data: {
+      labels: ranking.map(r => r.nome.length > 22 ? r.nome.slice(0, 20) + '…' : r.nome),
+      datasets: [{
+        label: 'Aulas',
+        data: ranking.map(r => r.aulas),
+        backgroundColor: '#2563eb',
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true } }
+    }
+  });
+
+  // 4. Turmas atribuídas por escola
+  const porEscola = {};
+  ofertasEstado.forEach(o => {
+    if (o.estado.status !== 'Atribuída') return;
+    const sid = o.classes?.school_id;
+    if (!sid) return;
+    porEscola[sid] = (porEscola[sid] || 0) + 1;
+  });
+
+  const labelsEscola = [];
+  const dadosEscola = [];
+  Object.keys(porEscola).sort((a, b) => {
+    const ea = cache.escolas.find(e => e.id === a);
+    const eb = cache.escolas.find(e => e.id === b);
+    return (nomeCurto(ea?.name, ea?.short_name) || '').localeCompare(nomeCurto(eb?.name, eb?.short_name) || '');
+  }).forEach(sid => {
+    const e = cache.escolas.find(x => x.id === sid);
+    labelsEscola.push(nomeCurto(e?.name, e?.short_name));
+    dadosEscola.push(porEscola[sid]);
+  });
+
+  charts.porEscola = new Chart($('chart-por-escola'), {
+    type: 'bar',
+    data: {
+      labels: labelsEscola,
+      datasets: [{
+        label: 'Turmas atribuídas',
+        data: dadosEscola,
+        backgroundColor: '#10b981',
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
 }
 
 function limparFiltros() {
-  $('f-escola').value = ''; $('f-periodo').value = ''; $('f-professor').value = '';
+  $('f-escola').value = ''; $('f-periodo').value = '';
+  $('f-disciplina').value = ''; $('f-professor').value = '';
   carregarRelatorio();
 }
 
@@ -305,6 +750,7 @@ function limparFiltros() {
   const session = await requireLogin();
   if (!session) return;
   $('logout').onclick = (e) => { e.preventDefault(); logout(); };
+  await carregarDados();
   carregarRelatorio();
 })();
 </script>
