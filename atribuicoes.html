@@ -6,18 +6,14 @@
 <title>Atribuições — Sistema de Atribuição de Aulas</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root {
-    --primary: #2563eb; --primary-dark: #1e40af; --danger: #dc2626;
-    --warning: #d97706; --success: #059669;
-    --bg: #f3f4f6; --card: #ffffff; --border: #e5e7eb; --text: #111827; --muted: #6b7280;
-  }
+  :root { --primary: #2563eb; --primary-dark: #1e40af; --danger: #dc2626; --warning: #d97706; --success: #059669; --bg: #f3f4f6; --card: #ffffff; --border: #e5e7eb; --text: #111827; --muted: #6b7280; }
   * { box-sizing: border-box; }
   body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: var(--bg); color: var(--text); }
   header { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
   header h1 { font-size: 18px; margin: 0; }
   header nav a { color: var(--text); text-decoration: none; margin-right: 16px; font-size: 14px; }
   header nav a.active { color: var(--primary); font-weight: 600; }
-  .container { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+  .container { max-width: 1280px; margin: 24px auto; padding: 0 16px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
   .card h2 { font-size: 15px; margin: 0 0 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
   .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; align-items: end; }
@@ -25,21 +21,10 @@
   input, select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white; }
   button.btn { padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap; }
   .btn-primary { background: var(--primary); color: white; } .btn-primary:hover { background: var(--primary-dark); }
-  .btn-warning { background: var(--warning); color: white; }
-  .btn-success { background: var(--success); color: white; }
-  .btn-sm { padding: 4px 10px; font-size: 12px; }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
-  th { background: #f9fafb; font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; }
-  tr:last-child td { border-bottom: none; }
-  .empty { color: var(--muted); font-size: 14px; padding: 20px; text-align: center; }
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
-  .badge-free { background: #d1fae5; color: #065f46; }
-  .badge-taken { background: #dbeafe; color: #1e40af; }
-  .badge-left { background: #fed7aa; color: #9a3412; }
-  .badge-substituted { background: #e9d5ff; color: #6b21a8; }
-  .toast { position: fixed; bottom: 20px; right: 20px; background: #111827; color: white; padding: 12px 20px; border-radius: 6px; font-size: 14px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 9999; }
-  .toast.show { opacity: 1; } .toast.error { background: var(--danger); }
+  .btn-warning { background: var(--warning); color: white; } .btn-warning:hover { background: #b45309; }
+  .btn-success { background: var(--success); color: white; } .btn-success:hover { background: #047857; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  
   .resumo { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 8px; }
   .resumo-item { background: #f9fafb; border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; }
   .resumo-item .label { font-size: 11px; color: var(--muted); text-transform: uppercase; }
@@ -47,6 +32,37 @@
   .professor-nome { font-size: 18px; font-weight: 700; margin: 0; }
   .professor-disciplina { color: var(--muted); font-size: 13px; margin: 2px 0 0; }
   .aviso-rel { background: #fef3c7; color: #92400e; padding: 8px 12px; border-radius: 6px; font-size: 12px; margin-bottom: 12px; }
+
+  /* BLOCO DE ESCOLA */
+  .escola-bloco { background: #fff; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; overflow: hidden; }
+  .escola-bloco-header { background: #f3f4f6; padding: 8px 14px; font-weight: 700; font-size: 13px; border-bottom: 1px solid var(--border); color: #111; display: flex; justify-content: space-between; align-items: center; }
+  .escola-bloco-header .contagem { font-weight: 500; font-size: 11px; color: var(--muted); }
+  .escola-bloco-body { padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+
+  /* CARTÃO DE TURMA (135px) */
+  .turma-card { width: 135px; border: 1px solid var(--border); border-radius: 6px; padding: 7px 8px; display: flex; flex-direction: column; gap: 4px; background: #fff; transition: box-shadow .15s; position: relative; }
+  .turma-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+  .turma-card .turma { font-weight: 700; font-size: 13px; line-height: 1.2; color: #111; }
+  .turma-card .disciplina { font-size: 10.5px; color: var(--muted); line-height: 1.2; }
+  .turma-card .linha-info { font-size: 10.5px; color: #4b5563; line-height: 1.2; }
+  .turma-card .badge-wrap { min-height: 16px; margin-top: 2px; display: flex; align-items: center; }
+  .turma-card .btn-wrap { margin-top: auto; }
+  .turma-card .btn-wrap .btn { width: 100%; }
+  .turma-card .texto-info { font-size: 9.5px; color: var(--muted); text-align: center; padding: 3px 0; }
+
+  .turma-card.estado-livre { border-left: 3px solid #10b981; }
+  .turma-card.estado-atribuida { border-left: 3px solid #3b82f6; }
+  .turma-card.estado-deixada { border-left: 3px solid #f59e0b; }
+  .turma-card.estado-substituicao { border-left: 3px solid #8b5cf6; }
+
+  .badge { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 9.5px; font-weight: 600; line-height: 1.3; }
+  .badge-free { background: #d1fae5; color: #065f46; }
+  .badge-taken { background: #dbeafe; color: #1e40af; }
+  .badge-left { background: #fed7aa; color: #9a3412; }
+  .badge-substituted { background: #e9d5ff; color: #6b21a8; }
+  .empty-bloco { color: var(--muted); padding: 20px; text-align: center; font-size: 14px; }
+  .toast { position: fixed; bottom: 20px; right: 20px; background: #111827; color: white; padding: 12px 20px; border-radius: 6px; font-size: 14px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 9999; }
+  .toast.show { opacity: 1; } .toast.error { background: var(--danger); }
 </style>
 </head>
 <body>
@@ -64,18 +80,11 @@
 </header>
 
 <div class="container">
-
   <div class="card">
     <h2>Selecione os filtros</h2>
     <div class="form-row">
-      <div>
-        <label>Disciplina *</label>
-        <select id="filtro-disciplina"><option value="">Selecione...</option></select>
-      </div>
-      <div>
-        <label>Professor</label>
-        <select id="filtro-professor"><option value="">Selecione a disciplina primeiro...</option></select>
-      </div>
+      <div><label>Disciplina *</label><select id="filtro-disciplina"><option value="">Selecione...</option></select></div>
+      <div><label>Professor</label><select id="filtro-professor"><option value="">Selecione a disciplina primeiro...</option></select></div>
       <div>
         <label>Fase</label>
         <select id="filtro-fase">
@@ -84,10 +93,7 @@
           <option value="Substituição">Fase 3 — Substituição</option>
         </select>
       </div>
-      <div>
-        <label>Escola (opcional)</label>
-        <select id="filtro-escola"><option value="">Todas</option></select>
-      </div>
+      <div><label>Escola (opcional)</label><select id="filtro-escola"><option value="">Todas</option></select></div>
     </div>
   </div>
 
@@ -104,27 +110,9 @@
 
   <div class="card">
     <h2>Turmas da disciplina</h2>
-    <div id="aviso-rel" class="aviso-rel" style="display:none;">
-      Incluindo também as ofertas de <strong>Religiosidade</strong>, pois professores de História assumem essas aulas.
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Escola</th>
-          <th>Turma</th>
-          <th>Disciplina</th>
-          <th>Período</th>
-          <th>Aulas</th>
-          <th>Estado</th>
-          <th style="width:200px">Ação</th>
-        </tr>
-      </thead>
-      <tbody id="lista-turmas">
-        <tr><td colspan="7" class="empty">Selecione uma disciplina para ver as turmas.</td></tr>
-      </tbody>
-    </table>
+    <div id="aviso-rel" class="aviso-rel" style="display:none;">Incluindo também as ofertas de <strong>Religiosidade</strong>, pois professores de História assumem essas aulas.</div>
+    <div id="blocos-escolas"><div class="empty-bloco">Selecione uma disciplina para ver as turmas.</div></div>
   </div>
-
 </div>
 
 <div class="toast" id="toast"></div>
@@ -137,22 +125,21 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 const $ = (id) => document.getElementById(id);
 function toast(msg, erro = false) {
   const t = $('toast');
-  t.textContent = msg;
-  t.className = 'toast show' + (erro ? ' error' : '');
+  t.textContent = msg; t.className = 'toast show' + (erro ? ' error' : '');
   setTimeout(() => t.className = 'toast', 2500);
 }
-function esc(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 async function requireLogin() {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (!session) { window.location.href = 'index.html'; return null; }
   return session;
 }
-async function logout() {
-  await supabaseClient.auth.signOut();
-  window.location.href = 'index.html';
-}
+async function logout() { await supabaseClient.auth.signOut(); window.location.href = 'index.html'; }
+
+const MAPA_NOMES_CURTOS = {
+  'Creche Municipal "Estudante Renato Cabral Pereira"': 'Creche I', 'Creche Municipal "Vereador Benedito Cantinho Braga Filho – Diquito Braga"': 'Creche II', 'Creche Municipal "Vereador Benedito Cantinho Braga Filho - Diquito Braga"': 'Creche II', 'E.M.E.F. "Barão de Santa Branca"': 'Barão', 'E.M.E.F. "Prof.ª Palmyra Martins Rosa Perillo"': 'Palmyra', 'E.M.E.F. "Prof.ª Benedita Pereira de Albuquerque"': 'Benedita', 'E.M.E.F. "Prof.ª Francisca Rosa Gomes"': 'Rosa Gomes', 'E.M.E.F. "Prof.ª Isaura Martins Rosa de Siqueira"': 'Isaura', 'E.M.E.I. "Terezinha do Menino Jesus Porto Wuó"': 'Terezinha', 'E.M.E.I.F (R) "Prof.ª Maria Apparecida Fonseca"': 'Fonseca', 'E.M.E.I.F (R) "Prof.ª Sylvia Cantinho Braga Campos"': 'Sylvia'
+};
+function nomeCurto(nome, shortName) { if (shortName && shortName.trim()) return shortName.trim(); if (MAPA_NOMES_CURTOS[nome]) return MAPA_NOMES_CURTOS[nome]; return nome; }
 
 let disciplinas = [], professores = [], ofertas = [], assignments = [], escolas = [];
 let teacherMap = {};
@@ -161,57 +148,42 @@ async function carregarTudo() {
   const [d, p, o, a, e] = await Promise.all([
     supabaseClient.from('disciplines').select('*').order('name'),
     supabaseClient.from('teachers').select('*').order('full_name'),
-    supabaseClient.from('class_disciplines').select('*, classes(id, name, period, school_id, schools(id, name)), disciplines(name)'),
+    supabaseClient.from('class_disciplines').select('*, classes(id, name, period, school_id, schools(id, name, short_name)), disciplines(name)'),
     supabaseClient.from('assignments').select('*').order('created_at', { ascending: false }),
     supabaseClient.from('schools').select('*').order('name'),
   ]);
-  if (d.error) return toast('Erro disciplinas: ' + d.error.message, true);
-  if (p.error) return toast('Erro professores: ' + p.error.message, true);
-  if (o.error) return toast('Erro ofertas: ' + o.error.message, true);
-  if (a.error) return toast('Erro atribuições: ' + a.error.message, true);
-
-  disciplinas = d.data || []; professores = p.data || [];
-  ofertas = o.data || []; assignments = a.data || []; escolas = e.data || [];
+  disciplinas = d.data || []; professores = p.data || []; ofertas = o.data || []; assignments = a.data || []; escolas = e.data || [];
   teacherMap = Object.fromEntries(professores.map(p => [p.id, p]));
-
-  preencherDisciplinas();
-  preencherEscolas();
-  renderizar();
+  preencherDisciplinas(); preencherEscolas(); renderizar();
 }
 
 function preencherDisciplinas() {
   const atual = $('filtro-disciplina').value;
-  $('filtro-disciplina').innerHTML = '<option value="">Selecione...</option>' +
-    disciplinas.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('');
+  $('filtro-disciplina').innerHTML = '<option value="">Selecione...</option>' + disciplinas.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('');
   if (atual) $('filtro-disciplina').value = atual;
 }
-
 function preencherEscolas() {
   const atual = $('filtro-escola').value;
-  $('filtro-escola').innerHTML = '<option value="">Todas</option>' +
-    escolas.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
+  $('filtro-escola').innerHTML = '<option value="">Todas</option>' + escolas.map(e => `<option value="${e.id}">${esc(nomeCurto(e.name, e.short_name))} — ${esc(e.name)}</option>`).join('');
   if (atual) $('filtro-escola').value = atual;
 }
-
 function atualizarProfessores() {
   const discId = $('filtro-disciplina').value;
   const atual = $('filtro-professor').value;
   const filtrados = discId ? professores.filter(p => p.discipline_id === discId) : [];
-  $('filtro-professor').innerHTML = discId
-    ? (filtrados.length
-        ? '<option value="">Selecione...</option>' + filtrados.map(p => `<option value="${p.id}">${esc(p.full_name)}</option>`).join('')
-        : '<option value="">Nenhum professor nessa disciplina</option>')
-    : '<option value="">Selecione a disciplina primeiro...</option>';
+  $('filtro-professor').innerHTML = discId ? (filtrados.length ? '<option value="">Selecione...</option>' + filtrados.map(p => `<option value="${p.id}">${esc(p.full_name)}</option>`).join('') : '<option value="">Nenhum professor nessa disciplina</option>') : '<option value="">Selecione a disciplina primeiro...</option>';
   if (atual && filtrados.some(p => p.id === atual)) $('filtro-professor').value = atual;
 }
-
 function estadoOferta(classDisciplineId) {
   const daOferta = assignments.filter(a => a.class_discipline_id === classDisciplineId);
   if (daOferta.length === 0) return { status: 'Disponível' };
   const ativo = daOferta.find(a => a.status === 'Ativo');
   if (ativo) return { status: 'Atribuída', assignment: ativo };
-  const maisRecente = daOferta[0];
-  return { status: 'Deixada', assignment: maisRecente };
+  return { status: 'Deixada', assignment: daOferta[0] };
+}
+function ordemPeriodo(p) {
+  const s = (p || '').toLowerCase();
+  if (s.startsWith('manh')) return 1; if (s.startsWith('tard')) return 2; if (s.startsWith('noit')) return 3; if (s.startsWith('integ')) return 4; return 5;
 }
 
 function renderizar() {
@@ -219,147 +191,111 @@ function renderizar() {
   const schoolId = $('filtro-escola').value;
   const profId = $('filtro-professor').value;
   const fase = $('filtro-fase').value;
-
   renderizarResumo(profId);
 
-  // Se disciplina for História, incluir Religiosidade também
   const disciplinaSelecionada = disciplinas.find(d => d.id === discId);
   const discIds = discId ? [discId] : [];
   let incluindoRel = false;
-  if (disciplinaSelecionada?.name === 'História') {
-    const rel = disciplinas.find(d => d.name === 'Religiosidade');
-    if (rel) { discIds.push(rel.id); incluindoRel = true; }
-  }
+  if (disciplinaSelecionada?.name === 'História') { const rel = disciplinas.find(d => d.name === 'Religiosidade'); if (rel) { discIds.push(rel.id); incluindoRel = true; } }
   $('aviso-rel').style.display = incluindoRel ? 'block' : 'none';
 
-  if (!discId) {
-    $('lista-turmas').innerHTML = '<tr><td colspan="7" class="empty">Selecione uma disciplina para ver as turmas.</td></tr>';
-    return;
-  }
+  if (!discId) { $('blocos-escolas').innerHTML = '<div class="empty-bloco">Selecione uma disciplina para ver as turmas.</div>'; return; }
 
   let lista = ofertas.filter(o => discIds.includes(o.discipline_id));
   if (schoolId) lista = lista.filter(o => o.classes?.school_id === schoolId);
+  if (lista.length === 0) { $('blocos-escolas').innerHTML = '<div class="empty-bloco">Nenhuma turma encontrada com esses filtros.</div>'; return; }
 
-  lista.sort((a, b) => {
-    const sa = a.classes?.schools?.name || '';
-    const sb = b.classes?.schools?.name || '';
-    if (sa !== sb) return sa.localeCompare(sb);
-    return (a.classes?.name || '').localeCompare(b.classes?.name || '');
+  const grupos = {};
+  lista.forEach(o => { const escolaId = o.classes?.school_id; if (!escolaId) return; if (!grupos[escolaId]) grupos[escolaId] = []; grupos[escolaId].push(o); });
+
+  const idsOrdenados = Object.keys(grupos).sort((a, b) => {
+    const ea = escolas.find(e => e.id === a); const eb = escolas.find(e => e.id === b);
+    const ca = nomeCurto(ea?.name, ea?.short_name) || ''; const cb = nomeCurto(eb?.name, eb?.short_name) || '';
+    return ca.localeCompare(cb);
   });
 
-  if (lista.length === 0) {
-    $('lista-turmas').innerHTML = '<tr><td colspan="7" class="empty">Nenhuma turma encontrada com esses filtros.</td></tr>';
-    return;
+  $('blocos-escolas').innerHTML = idsOrdenados.map(escolaId => {
+    const escola = escolas.find(e => e.id === escolaId);
+    const turmas = grupos[escolaId].slice();
+    turmas.sort((a, b) => {
+      const pa = ordemPeriodo(a.classes?.period); const pb = ordemPeriodo(b.classes?.period);
+      if (pa !== pb) return pa - pb; return (a.classes?.name || '').localeCompare(b.classes?.name || '');
+    });
+    const cartoes = turmas.map(o => renderCartao(o, fase)).join('');
+    return `<div class="escola-bloco"><div class="escola-bloco-header"><span>${esc(escola?.name || '—')}</span><span class="contagem">${turmas.length} turma${turmas.length > 1 ? 's' : ''}</span></div><div class="escola-bloco-body">${cartoes}</div></div>`;
+  }).join('');
+}
+
+function renderCartao(o, fase) {
+  const estado = estadoOferta(o.id);
+  const turma = esc(o.classes?.name || '—');
+  const disciplina = esc(o.disciplines?.name || '—');
+  const periodo = esc(o.classes?.period || '—');
+  const aulas = o.lesson_count || 0;
+  let badge = '', acao = '', classeEstado = 'estado-livre';
+
+  if (estado.status === 'Disponível') {
+    badge = '<span class="badge badge-free">Disponível</span>'; classeEstado = 'estado-livre';
+    if (fase === 'Substituição') { acao = '<div class="texto-info">Aguardando alguém deixar</div>'; } 
+    else { acao = `<button class="btn btn-primary btn-sm" onclick="atribuir('${o.id}')">Atribuir</button>`; }
+  } else if (estado.status === 'Atribuída') {
+    const nome = teacherMap[estado.assignment.teacher_id]?.full_name || '—';
+    const tipo = estado.assignment.assignment_type;
+    if (tipo === 'Substituição') { badge = `<span class="badge badge-substituted">Subst.: ${esc(nome)}</span>`; classeEstado = 'estado-substituicao'; } 
+    else { badge = `<span class="badge badge-taken">${esc(tipo)}: ${esc(nome)}</span>`; classeEstado = 'estado-atribuida'; }
+    acao = `<button class="btn btn-warning btn-sm" onclick="deixar('${estado.assignment.id}')">Deixou a turma</button>`;
+  } else if (estado.status === 'Deixada') {
+    const nome = teacherMap[estado.assignment.teacher_id]?.full_name || '—';
+    badge = `<span class="badge badge-left">Deixada: ${esc(nome)}</span>`; classeEstado = 'estado-deixada';
+    if (fase === 'Substituição') { acao = `<button class="btn btn-success btn-sm" onclick="assumirSubstituto('${o.id}', '${estado.assignment.id}')">Assumir</button>`; } 
+    else { acao = '<div class="texto-info">Mude para Fase 3</div>'; }
   }
 
-  $('lista-turmas').innerHTML = lista.map(o => {
-    const estado = estadoOferta(o.id);
-    const school = esc(o.classes?.schools?.name || '—');
-    const turma = esc(o.classes?.name || '—');
-    const periodo = esc(o.classes?.period || '—');
-    const disciplina = esc(o.disciplines?.name || '—');
-
-    let badge = '', acao = '';
-
-    if (estado.status === 'Disponível') {
-      badge = '<span class="badge badge-free">Disponível</span>';
-      if (fase === 'Substituição') {
-        acao = '<span style="color:var(--muted);font-size:12px;">Aguardando alguém deixar</span>';
-      } else {
-        acao = `<button class="btn btn-primary btn-sm" onclick="atribuir('${o.id}')">Atribuir</button>`;
-      }
-    } else if (estado.status === 'Atribuída') {
-      const nome = teacherMap[estado.assignment.teacher_id]?.full_name || '—';
-      const tipo = estado.assignment.assignment_type;
-      const corBadge = tipo === 'Substituição' ? 'badge-substituted' : 'badge-taken';
-      badge = `<span class="badge ${corBadge}">${esc(tipo)}: ${esc(nome)}</span>`;
-      acao = `<button class="btn btn-warning btn-sm" onclick="deixar('${estado.assignment.id}')">Deixou a turma</button>`;
-    } else if (estado.status === 'Deixada') {
-      const nome = teacherMap[estado.assignment.teacher_id]?.full_name || '—';
-      badge = `<span class="badge badge-left">Deixada por ${esc(nome)}</span>`;
-      if (fase === 'Substituição') {
-        acao = `<button class="btn btn-success btn-sm" onclick="assumirSubstituto('${o.id}', '${estado.assignment.id}')">Assumir</button>`;
-      } else {
-        acao = '<span style="color:var(--muted);font-size:12px;">Mude para Fase 3 para assumir</span>';
-      }
-    }
-
-    return `<tr>
-      <td>${school}</td>
-      <td>${turma}</td>
-      <td>${disciplina}</td>
-      <td>${periodo}</td>
-      <td>${o.lesson_count}</td>
-      <td>${badge}</td>
-      <td>${acao}</td>
-    </tr>`;
-  }).join('');
+  return `<div class="turma-card ${classeEstado}"><div><div class="turma">${turma}</div><div class="disciplina">${disciplina}</div><div class="linha-info">${periodo} · ${aulas} aula${aulas !== 1 ? 's' : ''}</div><div class="badge-wrap">${badge}</div></div><div class="btn-wrap">${acao}</div></div>`;
 }
 
 function renderizarResumo(profId) {
   if (!profId) { $('card-resumo').style.display = 'none'; return; }
   $('card-resumo').style.display = 'block';
-
   const prof = teacherMap[profId];
   const disciplina = disciplinas.find(d => d.id === prof?.discipline_id);
   $('resumo-nome').textContent = prof?.full_name || '—';
   $('resumo-disciplina').textContent = disciplina?.name || 'Sem disciplina';
-
   const ativas = assignments.filter(a => a.teacher_id === profId && a.status === 'Ativo');
   const ofertasDoProf = ativas.map(a => ofertas.find(o => o.id === a.class_discipline_id)).filter(Boolean);
-  const totalAulas = ofertasDoProf.reduce((s, o) => s + (o.lesson_count || 0), 0);
-  const escolasDistintas = new Set(ofertasDoProf.map(o => o.classes?.school_id).filter(Boolean));
-
   $('resumo-turmas').textContent = ofertasDoProf.length;
-  $('resumo-aulas').textContent = totalAulas;
-  $('resumo-escolas').textContent = escolasDistintas.size;
+  $('resumo-aulas').textContent = ofertasDoProf.reduce((s, o) => s + (o.lesson_count || 0), 0);
+  $('resumo-escolas').textContent = new Set(ofertasDoProf.map(o => o.classes?.school_id).filter(Boolean)).size;
 }
 
 async function atribuir(classDisciplineId) {
-  const profId = $('filtro-professor').value;
-  const fase = $('filtro-fase').value;
+  const profId = $('filtro-professor').value; const fase = $('filtro-fase').value;
   if (!profId) return toast('Selecione um professor primeiro', true);
-  const { error } = await supabaseClient.from('assignments').insert({
-    class_discipline_id: classDisciplineId, teacher_id: profId,
-    assignment_type: fase, status: 'Ativo',
-  });
+  const { error } = await supabaseClient.from('assignments').insert({ class_discipline_id: classDisciplineId, teacher_id: profId, assignment_type: fase, status: 'Ativo' });
   if (error) return toast(error.message, true);
   toast('Turma atribuída'); await recarregarAssignments();
 }
-
 async function deixar(assignmentId) {
-  const profId = $('filtro-professor').value;
-  const atual = assignments.find(a => a.id === assignmentId);
-  if (profId && atual && atual.teacher_id !== profId) {
-    if (!confirm('Esta turma pertence a outro professor. Confirmar que ele(a) deixou a turma?')) return;
-  } else {
-    if (!confirm('Confirmar que o professor deixou esta turma?')) return;
-  }
-  const { error } = await supabaseClient.from('assignments')
-    .update({ status: 'Deixou a turma' }).eq('id', assignmentId);
+  const profId = $('filtro-professor').value; const atual = assignments.find(a => a.id === assignmentId);
+  if (profId && atual && atual.teacher_id !== profId) { if (!confirm('Esta turma pertence a outro professor. Confirmar que ele(a) deixou a turma?')) return; } 
+  else { if (!confirm('Confirmar que o professor deixou esta turma?')) return; }
+  const { error } = await supabaseClient.from('assignments').update({ status: 'Deixou a turma' }).eq('id', assignmentId);
   if (error) return toast(error.message, true);
   toast('Registrado: professor deixou a turma'); await recarregarAssignments();
 }
-
 async function assumirSubstituto(classDisciplineId, assignmentAnteriorId) {
   const profId = $('filtro-professor').value;
   if (!profId) return toast('Selecione um professor primeiro', true);
-  const { error: e1 } = await supabaseClient.from('assignments')
-    .update({ status: 'Substituído', substituted_by_teacher_id: profId }).eq('id', assignmentAnteriorId);
+  const { error: e1 } = await supabaseClient.from('assignments').update({ status: 'Substituído', substituted_by_teacher_id: profId }).eq('id', assignmentAnteriorId);
   if (e1) return toast(e1.message, true);
-  const { error: e2 } = await supabaseClient.from('assignments').insert({
-    class_discipline_id: classDisciplineId, teacher_id: profId,
-    assignment_type: 'Substituição', status: 'Ativo',
-  });
+  const { error: e2 } = await supabaseClient.from('assignments').insert({ class_discipline_id: classDisciplineId, teacher_id: profId, assignment_type: 'Substituição', status: 'Ativo' });
   if (e2) return toast(e2.message, true);
   toast('Substituição registrada'); await recarregarAssignments();
 }
-
 async function recarregarAssignments() {
   const { data, error } = await supabaseClient.from('assignments').select('*').order('created_at', { ascending: false });
   if (error) return toast(error.message, true);
-  assignments = data || [];
-  renderizar();
+  assignments = data || []; renderizar();
 }
 
 $('filtro-disciplina').addEventListener('change', () => { atualizarProfessores(); renderizar(); });
@@ -371,8 +307,7 @@ $('filtro-escola').addEventListener('change', renderizar);
   const session = await requireLogin();
   if (!session) return;
   $('logout').onclick = (e) => { e.preventDefault(); logout(); };
-  await carregarTudo();
-  atualizarProfessores();
+  await carregarTudo(); atualizarProfessores();
 })();
 </script>
 </body>
