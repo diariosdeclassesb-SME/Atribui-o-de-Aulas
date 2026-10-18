@@ -110,7 +110,7 @@
 
   <div class="card">
     <h2>Turmas da disciplina</h2>
-    <div id="aviso-rel" class="aviso-rel" style="display:none;">Incluindo também as ofertas de <strong>Religiosidade</strong>, pois professores de História assumem essas aulas.</div>
+    <div id="aviso-rel" class="aviso-rel" style="display:none;"></div>
     <div id="blocos-escolas"><div class="empty-bloco">Selecione uma disciplina para ver as turmas.</div></div>
   </div>
 </div>
@@ -187,16 +187,15 @@ function ordemPeriodo(p) {
 }
 
 // ---------------------------------------------------------------
-// Regras de disciplinas que "puxam" ofertas adicionais.
-// Cada entrada: disciplina principal -> { nomes: [...], aviso: "HTML" }
+// Regras de disciplinas extras
 // ---------------------------------------------------------------
 const REGRAS_DISCIPLINAS_EXTRA = {
   'História': {
-    nomes: ['Religiosidade'],
+    includes: ['Religiosidade'],
     aviso: 'Incluindo também as ofertas de <strong>Religiosidade</strong>, pois professores de História assumem essas aulas.',
   },
   'Polivalente - PEB I': {
-    nomes: ['Literatura', 'Música'],
+    includes: ['Literatura', 'Música', 'Musica'], // Busca flexível
     aviso: 'Incluindo também as ofertas de <strong>Literatura</strong> e <strong>Música</strong>, pois professores de Polivalente - PEB I assumem essas aulas.',
   },
 };
@@ -215,9 +214,13 @@ function renderizar() {
   if (disciplinaSelecionada) {
     const regra = REGRAS_DISCIPLINAS_EXTRA[disciplinaSelecionada.name];
     if (regra) {
-      const extras = regra.nomes
-        .map(nome => disciplinas.find(d => d.name === nome))
-        .filter(Boolean);
+      // Filtra disciplinas cujos nomes batem com as regras (ignora maiúsculas/minúsculas e verifica se contém a palavra)
+      const extras = disciplinas.filter(d => 
+        regra.includes.some(termo => 
+          d.name.toLowerCase().includes(termo.toLowerCase())
+        )
+      );
+      
       if (extras.length > 0) {
         extras.forEach(d => { if (!discIds.includes(d.id)) discIds.push(d.id); });
         avisoHtml = regra.aviso;
