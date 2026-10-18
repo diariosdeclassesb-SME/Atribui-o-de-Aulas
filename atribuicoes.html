@@ -186,6 +186,21 @@ function ordemPeriodo(p) {
   if (s.startsWith('manh')) return 1; if (s.startsWith('tard')) return 2; if (s.startsWith('noit')) return 3; if (s.startsWith('integ')) return 4; return 5;
 }
 
+// ---------------------------------------------------------------
+// Regras de disciplinas que "puxam" ofertas adicionais.
+// Cada entrada: disciplina principal -> { nomes: [...], aviso: "HTML" }
+// ---------------------------------------------------------------
+const REGRAS_DISCIPLINAS_EXTRA = {
+  'História': {
+    nomes: ['Religiosidade'],
+    aviso: 'Incluindo também as ofertas de <strong>Religiosidade</strong>, pois professores de História assumem essas aulas.',
+  },
+  'Polivalente - PEB I': {
+    nomes: ['Literatura', 'Música'],
+    aviso: 'Incluindo também as ofertas de <strong>Literatura</strong> e <strong>Música</strong>, pois professores de Polivalente - PEB I assumem essas aulas.',
+  },
+};
+
 function renderizar() {
   const discId = $('filtro-disciplina').value;
   const schoolId = $('filtro-escola').value;
@@ -195,9 +210,27 @@ function renderizar() {
 
   const disciplinaSelecionada = disciplinas.find(d => d.id === discId);
   const discIds = discId ? [discId] : [];
-  let incluindoRel = false;
-  if (disciplinaSelecionada?.name === 'História') { const rel = disciplinas.find(d => d.name === 'Religiosidade'); if (rel) { discIds.push(rel.id); incluindoRel = true; } }
-  $('aviso-rel').style.display = incluindoRel ? 'block' : 'none';
+  let avisoHtml = '';
+
+  if (disciplinaSelecionada) {
+    const regra = REGRAS_DISCIPLINAS_EXTRA[disciplinaSelecionada.name];
+    if (regra) {
+      const extras = regra.nomes
+        .map(nome => disciplinas.find(d => d.name === nome))
+        .filter(Boolean);
+      if (extras.length > 0) {
+        extras.forEach(d => { if (!discIds.includes(d.id)) discIds.push(d.id); });
+        avisoHtml = regra.aviso;
+      }
+    }
+  }
+
+  if (avisoHtml) {
+    $('aviso-rel').innerHTML = avisoHtml;
+    $('aviso-rel').style.display = 'block';
+  } else {
+    $('aviso-rel').style.display = 'none';
+  }
 
   if (!discId) { $('blocos-escolas').innerHTML = '<div class="empty-bloco">Selecione uma disciplina para ver as turmas.</div>'; return; }
 
