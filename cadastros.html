@@ -24,10 +24,13 @@
   .tabs button.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
   .panel { display: none; } .panel.active { display: block; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-  .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: end; }
+  
+  /* Aumentado o tamanho mínimo das colunas para os menus não ficarem espremidos */
+  .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; align-items: end; }
+  
   label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
   input, select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white; }
-  button.btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; white-space: nowrap; }
+  button.btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; white-space: nowrap; height: 38px; }
   .btn-primary { background: var(--primary); color: white; } .btn-primary:hover { background: var(--primary-dark); }
   .btn-danger { background: var(--danger); color: white; padding: 4px 10px; font-size: 12px; }
   .btn-edit { background: #6b7280; color: white; padding: 4px 10px; font-size: 12px; margin-right: 4px; }
@@ -46,10 +49,12 @@
   .modal .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
   
   /* Ajustes do Tom Select */
-  .ts-wrapper { width: 100%; }
-  .ts-control { min-height: 38px; padding: 8px 10px; font-size: 14px; border-radius: 6px; display: flex; align-items: center; }
-  .ts-dropdown { font-size: 14px; }
-  .ts-dropdown .option { padding: 8px 10px; }
+  .ts-wrapper { width: 100%; min-width: 220px; }
+  .ts-control { min-height: 38px; padding: 8px 12px; font-size: 14px; border-radius: 6px; display: flex; align-items: center; }
+  
+  /* Força a lista suspensa a ser mais larga que a caixa para ler o nome inteiro */
+  .ts-dropdown { font-size: 14px; width: 100%; min-width: 280px; } 
+  .ts-dropdown .option { padding: 8px 12px; }
 </style>
 </head>
 <body>
@@ -117,11 +122,8 @@
   <section class="panel" id="panel-ofertas">
     <div class="card">
       <div class="form-row">
-        <!-- NOVO CAMPO: FILTRO POR ESCOLA -->
         <div><label>1. Escola</label><select id="oferta-escola" onchange="atualizarTurmasOferta()" placeholder="Buscar escola..."></select></div>
-        
         <div><label>2. Turma</label><select id="oferta-turma" placeholder="Escolha a escola primeiro..."></select></div>
-        
         <div>
           <label>3. Disciplinas (Uma ou várias)</label>
           <select id="oferta-disciplina" multiple></select>
@@ -287,7 +289,7 @@ function preencherSelects() {
   $('turma-escola').innerHTML = escolas.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
   new TomSelect('#turma-escola', { create: false, sortField: 'text' });
 
-  // NOVO: Oferta - Escola (Tom Select)
+  // Oferta - Escola (Tom Select)
   if ($('oferta-escola').tomselect) $('oferta-escola').tomselect.destroy();
   $('oferta-escola').innerHTML = '<option value="">Selecione a escola...</option>' + escolas.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
   new TomSelect('#oferta-escola', { create: false, sortField: 'text' });
@@ -317,9 +319,9 @@ function preencherSelects() {
   new TomSelect('#edit-prof-disciplina', { create: false, sortField: 'text' });
 }
 
-// NOVA FUNÇÃO: Atualiza as turmas com base na escola escolhida
+// Atualiza as turmas com base na escola escolhida
 function atualizarTurmasOferta() {
-  const schoolId = $('oferta-escola').value;
+  const schoolId = $('oferta-escola').tomselect.getValue();
   
   if ($('oferta-turma').tomselect) {
     $('oferta-turma').tomselect.destroy();
@@ -331,9 +333,6 @@ function atualizarTurmasOferta() {
     return;
   }
 
-  const turmasFiltradas = turmas.filter(t => t.schools?.name === escolas.find(e => e.id === schoolId)?.name); // Filtra pelo ID da escola
-  
-  // Na verdade, a tabela classes tem school_id. Vamos usar isso.
   const turmasDaEscola = turmas.filter(t => t.school_id === schoolId);
 
   $('oferta-turma').innerHTML = '<option value="">Selecione a turma...</option>' + 
@@ -454,14 +453,15 @@ async function delDisciplina(id) {
 }
 
 async function addTurma() {
-  const school_id = $('turma-escola').value;
+  const school_id = $('turma-escola').tomselect.getValue(); // Uso seguro do TomSelect
   const name = $('turma-nome').value.trim();
   const period = $('turma-periodo').value;
   if (!school_id || !name) return toast('Preencha escola e nome', true);
   const { error } = await supabaseClient.from('classes').insert({ school_id, name, period });
   if (error) return toast(error.message, true);
   $('turma-nome').value = '';
-  toast('Turma adicionada'); carregarTudo();
+  toast('Turma adicionada com sucesso!'); 
+  carregarTudo();
 }
 async function delTurma(id) {
   if (!confirm('Excluir esta turma?')) return;
@@ -472,7 +472,7 @@ async function delTurma(id) {
 
 // --- Ofertas ---
 async function addOferta() {
-  const class_id = $('oferta-turma').value;
+  const class_id = $('oferta-turma').tomselect.getValue(); // Uso seguro do TomSelect
   const discipline_ids = $('oferta-disciplina').tomselect.getValue();
   const lesson_count = parseInt($('oferta-aulas').value, 10);
   
@@ -487,7 +487,7 @@ async function addOferta() {
   }
   
   $('oferta-disciplina').tomselect.clear();
-  toast(`${discipline_ids.length} oferta(s) adicionada(s)!`); 
+  toast(`${discipline_ids.length} disciplina(s) vinculada(s) com sucesso!`); 
   carregarTudo();
 }
 
@@ -538,7 +538,7 @@ function fecharModalDuplicar() {
 
 async function confirmarDuplicar() {
   const origemId = $('dup-origem-id').value;
-  const destinoId = $('dup-destino-id').value;
+  const destinoId = $('dup-destino-id').tomselect.getValue();
   if (!destinoId) return toast('Selecione a turma de destino', true);
 
   const ofertasOrigem = ofertas.filter(o => o.classes?.id === origemId);
@@ -577,7 +577,7 @@ async function addProfessor() {
   const email = $('prof-email').value.trim() || null;
   const rg = $('prof-rg').value.trim() || null;
   const cpf = $('prof-cpf').value.trim() || null;
-  const discipline_id = $('prof-disciplina').value || null;
+  const discipline_id = $('prof-disciplina').tomselect.getValue() || null; // Uso seguro do TomSelect
   if (!full_name) return toast('Digite o nome do professor', true);
   const { error } = await supabaseClient.from('teachers').insert({ full_name, email, rg, cpf, discipline_id });
   if (error) return toast(error.message, true);
@@ -599,8 +599,6 @@ function abrirEdicaoProf(id) {
   
   if ($('edit-prof-disciplina').tomselect) {
     $('edit-prof-disciplina').tomselect.setValue(p.discipline_id || '');
-  } else {
-    $('edit-prof-disciplina').value = p.discipline_id || '';
   }
   
   $('modal-prof').classList.add('show');
@@ -612,7 +610,7 @@ async function salvarEdicaoProf() {
   const email = $('edit-prof-email').value.trim() || null;
   const rg = $('edit-prof-rg').value.trim() || null;
   const cpf = $('edit-prof-cpf').value.trim() || null;
-  const discipline_id = $('edit-prof-disciplina').value || null;
+  const discipline_id = $('edit-prof-disciplina').tomselect.getValue() || null; // Uso seguro do TomSelect
   if (!full_name) return toast('Digite o nome', true);
   const { error } = await supabaseClient.from('teachers').update({ full_name, email, rg, cpf, discipline_id }).eq('id', id);
   if (error) return toast(error.message, true);
