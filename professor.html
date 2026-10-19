@@ -28,7 +28,6 @@
   .view { display: none; } .view.active { display: block; }
   .doc-wrap { padding: 20px 0; display: flex; justify-content: center; }
   
-  /* Visual original mantido */
   .doc { background: #fff; width: 1100px; min-height: 210mm; padding: 6mm 8mm; box-shadow: 0 2px 12px rgba(0,0,0,.15); color: #000; }
   
   .doc-cabecalho { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 4px; }
@@ -50,7 +49,6 @@
   .field-doc:focus { background: #fef3c7; outline: 1px solid #f59e0b; }
   .field-doc.auto { background: #f3f4f6; }
 
-  /* Tabela Única Original */
   table.bloco { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 9px; table-layout: fixed; }
   table.bloco th, table.bloco td { border: 1px solid #000; padding: 1px 3px; vertical-align: middle; }
   table.bloco th { background: #f3f4f6; font-weight: 700; text-align: center; font-size: 8px; line-height: 1.15; word-break: break-word; }
@@ -297,25 +295,35 @@ function totaisPorPeriodo(lista) {
   return t;
 }
 
+// ============================================================
+// RENDERIZAÇÃO DO DOCUMENTO
+// ============================================================
 function renderDocumento(ctx) {
   const { settings, professor, dadosProf: dp, dadosDaca: dd, manuais: mm, ano, dataAtrib, unidadeSede, ataTexto, editavel } = ctx;
 
+  // CÁLCULO GLOBAL DE AULAS (SOMA DE TODOS OS BLOCOS)
+  const totalTitular = dd.titular.reduce((s, r) => s + (Number(r.lesson_count) || 0), 0);
+  const totalCarga = dd.carga.reduce((s, r) => s + (Number(r.lesson_count) || 0), 0);
+  const totalAssumiu = dd.assumiu.reduce((s, r) => s + (Number(r.lesson_count) || 0), 0);
+  
+  const globalTotalAulas = totalTitular + totalCarga + totalAssumiu;
+  const regraGlobal = aplicarRegraHEC(globalTotalAulas);
+  const globalTotais = totaisPorPeriodo([...dd.titular, ...dd.carga, ...dd.assumiu]);
+  const globalLivre = totalTitular + totalCarga;
+  const globalSubs = totalAssumiu;
+
+  // Cálculo automático da Jornada (Item 9)
   let jornadaAuto = '';
-  let totalBase = 0;
   let keyBase = null;
 
   if (dd.titular && dd.titular.length > 0) {
-    totalBase = dd.titular.reduce((s, r) => s + (Number(r.lesson_count) || 0), 0);
     keyBase = `${dd.titular[0].assignment_id}|titular`;
   } 
   else if (dd.carga && dd.carga.length > 0) {
-    totalBase = dd.carga.reduce((s, r) => s + (Number(r.lesson_count) || 0), 0);
     keyBase = `${dd.carga[0].assignment_id}|carga`;
   }
 
-  const regraBase = aplicarRegraHEC(totalBase);
-  if (regraBase) jornadaAuto = regraBase.total_sm;
-  
+  if (regraGlobal) jornadaAuto = regraGlobal.total_sm;
   if (keyBase && mm[keyBase] && mm[keyBase].total_sm) {
     jornadaAuto = mm[keyBase].total_sm;
   }
@@ -366,6 +374,33 @@ function renderDocumento(ctx) {
       <tr><th>M</th><th>T</th><th>N</th><th>Livre</th><th>Subs.</th></tr>
     </thead>`;
 
+  // Lógica para exibir o total apenas no primeiro bloco que tiver dados
+  let isFirst = true;
+  
+  let htmlTitular = '';
+  if (dd.titular.length > 0) {
+    htmlTitular = renderLinhasBloco('I - Lotação', 'titular', dd.titular, mm, editavel, globalTotalAulas, regraGlobal, globalTotais, globalLivre, globalSubs, isFirst);
+    isFirst = false;
+  } else {
+    htmlTitular = renderLinhasBloco('I - Lotação', 'titular', dd.titular, mm, editavel, globalTotalAulas, regraGlobal, globalTotais, globalLivre, globalSubs, false);
+  }
+
+  let htmlCarga = '';
+  if (dd.carga.length > 0) {
+    htmlCarga = renderLinhasBloco('II - Carga Suplem.', 'carga', dd.carga, mm, editavel, globalTotalAulas, regraGlobal, globalTotais, globalLivre, globalSubs, isFirst);
+    isFirst = false;
+  } else {
+    htmlCarga = renderLinhasBloco('II - Carga Suplem.', 'carga', dd.carga, mm, editavel, globalTotalAulas, regraGlobal, globalTotais, globalLivre, globalSubs, false);
+  }
+
+  let htmlSubst = '';
+  if (dd.deixou.length > 0 || dd.assumiu.length > 0) {
+    htmlSubst = renderLinhasBlocoSubstituicao(dd.deixou, dd.assumiu, mm, editavel, globalTotalAulas, regraGlobal, globalTotais, globalLivre, globalSubs, isFirst);
+    isFirst = false;
+  } else {
+    htmlSubst = renderLinhasBlocoSubstituicao(dd.deixou, dd.assumiu, mm, editavel, globalTotalAulas, regraGlobal, globalTotais, globalLivre, globalSubs, false);
+  }
+
   return `
     <div class="doc-cabecalho">
       <div class="esq">
@@ -404,9 +439,9 @@ function renderDocumento(ctx) {
       ${colgroupHtml}
       ${theadHtml}
       <tbody>
-        ${renderLinhasBloco('I - Lotação', 'titular', dd.titular, mm, editavel)}
-        ${renderLinhasBloco('II - Carga Suplem.', 'carga', dd.carga, mm, editavel)}
-        ${renderLinhasBlocoSubstituicao(dd.deixou, dd.assumiu, mm, editavel)}
+        ${htmlTitular}
+        ${htmlCarga}
+        ${htmlSubst}
       </tbody>
     </table>
 
@@ -420,14 +455,9 @@ function renderDocumento(ctx) {
     </div>`;
 }
 
-function renderLinhasBloco(rotulo, bloco, lista, mm, editavel) {
+function renderLinhasBloco(rotulo, bloco, lista, mm, editavel, globalTotalAulas, regraGlobal, globalTotais, globalLivre, globalSubs, isFirst) {
   const temLinhas = lista && lista.length > 0;
-  const totais = totaisPorPeriodo(lista || []);
-  const totalSemanal = (lista || []).reduce((s, r) => s + (Number(r.lesson_count) || 0), 0);
-  const totalLivre = totalSemanal;
-  const totalSubs = 0;
-  const regra = aplicarRegraHEC(totalSemanal);
-
+  
   const grupos = {};
   (lista || []).forEach(r => {
     const nomeEscola = nomeCurto(r.school_name, r.school_short_name);
@@ -446,6 +476,7 @@ function renderLinhasBloco(rotulo, bloco, lista, mm, editavel) {
   escolasOrdenadas.forEach((escola, i) => {
     const turmas = grupos[escola];
     const primeira = i === 0;
+    const isFirstRow = isFirst && primeira;
 
     const turmasLabel = turmas.map(t => {
       const ab = abreviarDisciplina(t.discipline_name);
@@ -457,19 +488,19 @@ function renderLinhasBloco(rotulo, bloco, lista, mm, editavel) {
     const val = v => v === null || v === undefined || v === '' ? '' : v;
 
     let hecVal = m.hec, haVal = m.ha, hllVal = m.hll, totalSmVal = m.total_sm;
-    if (primeira && regra) {
-      if (isVazio(hecVal)) hecVal = regra.hec;
-      if (isVazio(haVal)) haVal = regra.ha;
-      if (isVazio(hllVal)) hllVal = regra.hlle;
-      if (isVazio(totalSmVal)) totalSmVal = regra.total_sm;
+    if (isFirstRow && regraGlobal) {
+      if (isVazio(hecVal)) hecVal = regraGlobal.hec;
+      if (isVazio(haVal)) haVal = regraGlobal.ha;
+      if (isVazio(hllVal)) hllVal = regraGlobal.hlle;
+      if (isVazio(totalSmVal)) totalSmVal = regraGlobal.total_sm;
     }
 
-    const colM = primeira ? totais.M || '' : '';
-    const colT = primeira ? totais.T || '' : '';
-    const colN = primeira ? totais.N || '' : '';
-    const colLivre = primeira ? totalLivre || '' : '';
-    const colSubs = primeira ? totalSubs || '' : '';
-    const colAulasSemanais = primeira ? totalSemanal || '' : '';
+    const colM = isFirstRow ? globalTotais.M || '' : '';
+    const colT = isFirstRow ? globalTotais.T || '' : '';
+    const colN = isFirstRow ? globalTotais.N || '' : '';
+    const colLivre = isFirstRow ? globalLivre || '' : '';
+    const colSubs = isFirstRow ? globalSubs || '' : '';
+    const colAulasSemanais = isFirstRow ? globalTotalAulas || '' : '';
 
     const inputEdit = (campo, valor) => editavel ? `<input class="field-edit" type="text" data-key="${key}" data-campo="${campo}" value="${val(valor)}">` : `<span style="font-size:9px;">${val(valor) || ''}</span>`;
 
@@ -494,15 +525,7 @@ function renderLinhasBloco(rotulo, bloco, lista, mm, editavel) {
   return html;
 }
 
-function renderLinhasBlocoSubstituicao(deixou, assumiu, mm, editavel) {
-  const totDeixou = totaisPorPeriodo(deixou || []);
-  const totAssumiu = totaisPorPeriodo(assumiu || []);
-  const totalAulasDeixou = (deixou || []).reduce((s, r) => s + (Number(r.lesson_count) || 0), 0);
-  const totalAulasAssumiu = (assumiu || []).reduce((s, r) => s + (Number(r.lesson_count) || 0), 0);
-
-  const regraDeixou = aplicarRegraHEC(totalAulasDeixou);
-  const regraAssumiu = aplicarRegraHEC(totalAulasAssumiu);
-
+function renderLinhasBlocoSubstituicao(deixou, assumiu, mm, editavel, globalTotalAulas, regraGlobal, globalTotais, globalLivre, globalSubs, isFirst) {
   function agruparPorEscola(lista) {
     const grupos = {};
     (lista || []).forEach(r => {
@@ -526,34 +549,46 @@ function renderLinhasBlocoSubstituicao(deixou, assumiu, mm, editavel) {
     <td colspan="13" class="subtitulo">Deixou as seguintes Classes:</td>
   </tr>`;
 
+  let isFirstDeixou = isFirst && escolasDeixou.length > 0;
+  let isFirstAssumiu = isFirst && escolasDeixou.length === 0 && escolasAssumiu.length > 0;
+
   if (escolasDeixou.length === 0) {
     html += `<tr><td colspan="13" style="text-align:center;color:#6b7280;font-size:9px;">—</td></tr>`;
   } else {
     escolasDeixou.forEach((escola, i) => {
       const turmas = gruposDeixou[escola];
       const primeira = i === 0;
+      const isFirstRow = isFirstDeixou && primeira;
       const turmasLabel = turmas.map(t => { const ab = abreviarDisciplina(t.discipline_name); return ab ? `${t.class_name} (${ab})` : t.class_name; }).join(', ');
       const key = `${turmas[0].assignment_id}|deixou`;
       const m = mm[key] || { hec: '', ha: '', hll: '', total_sm: '' };
       const val = v => v === null || v === undefined || v === '' ? '' : v;
       
       let hecVal = m.hec, haVal = m.ha, hllVal = m.hll, totalSmVal = m.total_sm;
-      if (primeira && regraDeixou) {
-        if (isVazio(hecVal)) hecVal = regraDeixou.hec;
-        if (isVazio(haVal)) haVal = regraDeixou.ha;
-        if (isVazio(hllVal)) hllVal = regraDeixou.hlle;
-        if (isVazio(totalSmVal)) totalSmVal = regraDeixou.total_sm;
+      if (isFirstRow && regraGlobal) {
+        if (isVazio(hecVal)) hecVal = regraGlobal.hec;
+        if (isVazio(haVal)) haVal = regraGlobal.ha;
+        if (isVazio(hllVal)) hllVal = regraGlobal.hlle;
+        if (isVazio(totalSmVal)) totalSmVal = regraGlobal.total_sm;
       }
+
+      const colM = isFirstRow ? globalTotais.M || '' : '';
+      const colT = isFirstRow ? globalTotais.T || '' : '';
+      const colN = isFirstRow ? globalTotais.N || '' : '';
+      const colLivre = isFirstRow ? globalLivre || '' : '';
+      const colSubs = isFirstRow ? globalSubs || '' : '';
+      const colAulasSemanais = isFirstRow ? globalTotalAulas || '' : '';
 
       const inputEdit = (campo, valor) => editavel ? `<input class="field-edit" type="text" data-key="${key}" data-campo="${campo}" value="${val(valor)}">` : `<span style="font-size:9px;">${val(valor) || ''}</span>`;
 
       html += `<tr>
         <td>${esc(escola)}</td><td>${esc(turmasLabel)}</td>
-        <td style="text-align:center;">${primeira ? (totDeixou.M || '') : ''}</td>
-        <td style="text-align:center;">${primeira ? (totDeixou.T || '') : ''}</td>
-        <td style="text-align:center;">${primeira ? (totDeixou.N || '') : ''}</td>
-        <td style="text-align:center;"></td><td style="text-align:center;"></td>
-        <td style="text-align:center;">${primeira ? (totalAulasDeixou || '') : ''}</td>
+        <td style="text-align:center;">${colM}</td>
+        <td style="text-align:center;">${colT}</td>
+        <td style="text-align:center;">${colN}</td>
+        <td style="text-align:center;">${colLivre}</td>
+        <td style="text-align:center;">${colSubs}</td>
+        <td style="text-align:center;">${colAulasSemanais}</td>
         <td>${inputEdit('hec', hecVal)}</td><td>${inputEdit('ha', haVal)}</td>
         <td>${inputEdit('hll', hllVal)}</td><td>${inputEdit('total_sm', totalSmVal)}</td>
         <td><div class="assinatura-por-linha"></div></td>
@@ -569,29 +604,37 @@ function renderLinhasBlocoSubstituicao(deixou, assumiu, mm, editavel) {
     escolasAssumiu.forEach((escola, i) => {
       const turmas = gruposAssumiu[escola];
       const primeira = i === 0;
+      const isFirstRow = isFirstAssumiu && primeira;
       const turmasLabel = turmas.map(t => { const ab = abreviarDisciplina(t.discipline_name); return ab ? `${t.class_name} (${ab})` : t.class_name; }).join(', ');
       const key = `${turmas[0].assignment_id}|assumiu`;
       const m = mm[key] || { hec: '', ha: '', hll: '', total_sm: '' };
       const val = v => v === null || v === undefined || v === '' ? '' : v;
 
       let hecVal = m.hec, haVal = m.ha, hllVal = m.hll, totalSmVal = m.total_sm;
-      if (primeira && regraAssumiu) {
-        if (isVazio(hecVal)) hecVal = regraAssumiu.hec;
-        if (isVazio(haVal)) haVal = regraAssumiu.ha;
-        if (isVazio(hllVal)) hllVal = regraAssumiu.hlle;
-        if (isVazio(totalSmVal)) totalSmVal = regraAssumiu.total_sm;
+      if (isFirstRow && regraGlobal) {
+        if (isVazio(hecVal)) hecVal = regraGlobal.hec;
+        if (isVazio(haVal)) haVal = regraGlobal.ha;
+        if (isVazio(hllVal)) hllVal = regraGlobal.hlle;
+        if (isVazio(totalSmVal)) totalSmVal = regraGlobal.total_sm;
       }
+
+      const colM = isFirstRow ? globalTotais.M || '' : '';
+      const colT = isFirstRow ? globalTotais.T || '' : '';
+      const colN = isFirstRow ? globalTotais.N || '' : '';
+      const colLivre = isFirstRow ? globalLivre || '' : '';
+      const colSubs = isFirstRow ? globalSubs || '' : '';
+      const colAulasSemanais = isFirstRow ? globalTotalAulas || '' : '';
 
       const inputEdit = (campo, valor) => editavel ? `<input class="field-edit" type="text" data-key="${key}" data-campo="${campo}" value="${val(valor)}">` : `<span style="font-size:9px;">${val(valor) || ''}</span>`;
 
       html += `<tr>
         <td>${esc(escola)}</td><td>${esc(turmasLabel)}</td>
-        <td style="text-align:center;">${primeira ? (totAssumiu.M || '') : ''}</td>
-        <td style="text-align:center;">${primeira ? (totAssumiu.T || '') : ''}</td>
-        <td style="text-align:center;">${primeira ? (totAssumiu.N || '') : ''}</td>
-        <td style="text-align:center;"></td>
-        <td style="text-align:center;">${primeira ? (totalAulasAssumiu || '') : ''}</td>
-        <td style="text-align:center;">${primeira ? (totalAulasAssumiu || '') : ''}</td>
+        <td style="text-align:center;">${colM}</td>
+        <td style="text-align:center;">${colT}</td>
+        <td style="text-align:center;">${colN}</td>
+        <td style="text-align:center;">${colLivre}</td>
+        <td style="text-align:center;">${colSubs}</td>
+        <td style="text-align:center;">${colAulasSemanais}</td>
         <td>${inputEdit('hec', hecVal)}</td><td>${inputEdit('ha', haVal)}</td>
         <td>${inputEdit('hll', hllVal)}</td><td>${inputEdit('total_sm', totalSmVal)}</td>
         <td><div class="assinatura-por-linha"></div></td>
@@ -603,7 +646,7 @@ function renderLinhasBlocoSubstituicao(deixou, assumiu, mm, editavel) {
 }
 
 // ============================================================
-// EXPORTAR PDF (Preservando o visual e corrigindo o corte)
+// EXPORTAR PDF (Corrigido para não ficar em branco)
 // ============================================================
 async function exportarPDF() {
   const original = document.querySelector('.doc');
@@ -612,37 +655,33 @@ async function exportarPDF() {
   }
   if (document.activeElement) document.activeElement.blur();
 
-  // Clona o elemento para isolar o cálculo do PDF sem alterar o visual da tela
+  // Clona o documento para não estragar a tela e ajusta o tamanho fixo
   const clone = original.cloneNode(true);
-  clone.style.width = '1100px';
+  clone.style.width = '1100px'; 
   clone.style.minHeight = 'auto';
-  clone.style.padding = '10px';
-  clone.style.boxShadow = 'none';
+  clone.style.padding = '10mm';
   clone.style.background = '#fff';
-  clone.style.position = 'absolute';
-  clone.style.left = '-9999px';
-  clone.style.top = '0';
   
-  // Truque para o html2canvas não bugar com rowspan + vertical text:
-  // Força a tabela a ter altura automática e a borda colapsada corretamente
+  // Truque para o html2canvas não bugar a altura da tabela
   const tabela = clone.querySelector('table.bloco');
-  if (tabela) {
-    tabela.style.height = 'auto';
-  }
+  if (tabela) tabela.style.height = 'auto';
 
-  document.body.appendChild(clone);
+  // Cria um container invisível (mas renderizável) para o html2canvas capturar
+  const overlay = document.createElement('div');
+  overlay.style.position = 'fixed';
+  overlay.style.top = '0';
+  overlay.style.left = '0';
+  overlay.style.zIndex = '-9999';
+  overlay.style.opacity = '0.01'; // O html2canvas precisa que não seja 0
+  
+  overlay.appendChild(clone);
+  document.body.appendChild(overlay);
 
   const opt = {
     margin: 5,
     filename: `DACA_${new Date().toISOString().slice(0,10)}.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { 
-      scale: 2, 
-      useCORS: true, 
-      scrollY: 0, 
-      windowWidth: 1100,
-      scrollX: 0
-    },
+    html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 1100 },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
     pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' }
   };
@@ -650,13 +689,14 @@ async function exportarPDF() {
   toast('Gerando PDF...', 'success');
   
   try {
+    await new Promise(r => setTimeout(r, 300)); // Aguarda renderização
     await html2pdf().set(opt).from(clone).save();
     toast('PDF gerado com sucesso!', 'success');
   } catch (error) {
     console.error(error);
     toast('Erro ao gerar PDF', 'error');
   } finally {
-    document.body.removeChild(clone);
+    document.body.removeChild(overlay);
   }
 }
 
