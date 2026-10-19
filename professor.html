@@ -28,7 +28,8 @@
   .view { display: none; } .view.active { display: block; }
   .doc-wrap { padding: 20px 0; display: flex; justify-content: center; }
   
-  .doc { background: #fff; width: 1100px; min-height: 210mm; padding: 6mm 8mm; box-shadow: 0 2px 12px rgba(0,0,0,.15); color: #000; }
+  /* CORREÇÃO: Removido o min-height: 210mm para o conteúdo não exceder a folha */
+  .doc { background: #fff; width: 1100px; padding: 8mm; box-shadow: 0 2px 12px rgba(0,0,0,.15); color: #000; }
   
   .doc-cabecalho { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 4px; }
   .doc-cabecalho .esq { display: flex; gap: 10px; align-items: center; flex: 1; }
@@ -52,7 +53,6 @@
   table.bloco { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 9px; table-layout: fixed; }
   table.bloco th, table.bloco td { border: 1px solid #000; padding: 1px 3px; vertical-align: middle; }
   
-  /* CORREÇÃO DO CABEÇALHO: Retirado o break-word e ajustado o tamanho da fonte */
   table.bloco th { background: #f3f4f6; font-weight: 700; text-align: center; font-size: 8px; line-height: 1.15; word-break: normal; overflow-wrap: normal; }
 
   td.bloco-label { writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; font-weight: 700; font-size: 8.5px; padding: 4px 0 !important; width: 28px; white-space: nowrap; vertical-align: middle; background: #fafafa; letter-spacing: .3px; }
@@ -351,9 +351,9 @@ function renderDocumento(ctx) {
       <col> <!-- Classes -->
       <col style="width:24px"><col style="width:24px"><col style="width:24px"> <!-- M T N -->
       <col style="width:36px"><col style="width:36px"> <!-- Livre Subs -->
-      <col style="width:50px"> <!-- Nº Aulas Semanais (Aumentado) -->
+      <col style="width:50px"> <!-- Nº Aulas Semanais -->
       <col style="width:36px"><col style="width:36px"><col style="width:36px"> <!-- HEC HA HLLE -->
-      <col style="width:75px"> <!-- Total SM (Aumentado) -->
+      <col style="width:75px"> <!-- Total SM -->
       <col style="width:80px"> <!-- Assinatura -->
     </colgroup>`;
 
@@ -646,7 +646,7 @@ function renderLinhasBlocoSubstituicao(deixou, assumiu, mm, editavel, globalTota
 }
 
 // ============================================================
-// EXPORTAR PDF (Corrigido para não cortar a esquerda)
+// EXPORTAR PDF (Corrigido para não gerar página em branco)
 // ============================================================
 async function exportarPDF() {
   const original = document.querySelector('.doc');
@@ -655,17 +655,16 @@ async function exportarPDF() {
   }
   if (document.activeElement) document.activeElement.blur();
 
-  // Salva estilos originais
   const origShadow = original.style.boxShadow;
   const origMargin = original.style.margin;
   
-  // Ajusta temporariamente o elemento real para o PDF
   original.style.boxShadow = 'none';
   original.style.margin = '0';
-  original.style.width = '1100px'; // Garante que o html2canvas calcule a largura total
+  original.style.width = '1100px'; 
 
+  // Configurações ajustadas para evitar quebra de página em branco
   const opt = {
-    margin: 5,
+    margin: 0, // Margem 0 força o conteúdo a preencher exatamente o espaço
     filename: `DACA_${new Date().toISOString().slice(0,10)}.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { 
@@ -673,10 +672,9 @@ async function exportarPDF() {
       useCORS: true, 
       scrollY: 0, 
       scrollX: 0,
-      windowWidth: 1200 // Força uma janela virtual maior que o documento para não cortar a esquerda
+      windowWidth: 1200 
     },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-    pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' }
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
   };
 
   toast('Gerando PDF...', 'success');
@@ -688,7 +686,6 @@ async function exportarPDF() {
     console.error(error);
     toast('Erro ao gerar PDF', 'error');
   } finally {
-    // Restaura os estilos originais
     original.style.boxShadow = origShadow;
     original.style.margin = origMargin;
   }
