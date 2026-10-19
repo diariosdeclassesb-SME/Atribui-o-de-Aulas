@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>DACA — Sistema de Atribuição de Aulas</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 <style>
   * { box-sizing: border-box; }
   body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #e5e7eb; color: #111; font-size: 11px; }
@@ -46,7 +47,6 @@
   .field-doc:focus { background: #fef3c7; outline: 1px solid #f59e0b; }
   .field-doc.auto { background: #f3f4f6; }
 
-  /* Tabela Única */
   table.bloco { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 9px; table-layout: fixed; }
   table.bloco th, table.bloco td { border: 1px solid #000; padding: 1px 3px; vertical-align: middle; }
   table.bloco th { background: #f3f4f6; font-weight: 700; text-align: center; font-size: 8px; line-height: 1.15; word-break: break-word; }
@@ -77,7 +77,13 @@
     .doc-wrap { padding: 0; display: block; }
     .doc { box-shadow: none; width: 100%; min-height: 0; padding: 0; }
     .field-edit:focus, .field-doc:focus, .ata-box:focus { background: transparent; outline: none; }
+
+    /* Tenta ocultar o selo do Netlify na impressão (reforço) */
+    #netlify-badge, .netlify-badge, [id*="netlify"], [class*="netlify"] {
+      display: none !important;
+    }
   }
+
   .toast { position: fixed; bottom: 20px; right: 20px; background: #111827; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 9999; }
   .toast.show { opacity: 1; }
   .toast.error { background: #dc2626; } .toast.success { background: #059669; }
@@ -108,6 +114,7 @@
     <div><label>Ano:</label><input type="number" id="ano-doc" value="2026" style="width:80px;" /></div>
     <div><label>Data da Atribuição:</label><input type="date" id="data-atribuicao" /></div>
     <button class="btn btn-primary" onclick="window.print()">Imprimir</button>
+    <button class="btn btn-secondary" onclick="exportarPDF()">Exportar PDF</button>
     <button class="btn btn-success" onclick="salvarDaca()">Salvar DACA</button>
   </div>
   <div class="doc-wrap">
@@ -137,6 +144,7 @@
     <div class="no-print" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
       <h2 style="margin:0;font-size:16px;">DACA salva (somente leitura)</h2>
       <div><button class="btn btn-primary" onclick="window.print()">Imprimir</button>
+      <button class="btn btn-secondary" onclick="exportarPDF()">Exportar PDF</button>
       <button class="btn btn-secondary" onclick="fecharModal()">Fechar</button></div>
     </div>
     <div id="modal-doc-content"></div>
@@ -290,19 +298,14 @@ function totaisPorPeriodo(lista) {
 function renderDocumento(ctx) {
   const { settings, professor, dadosProf: dp, dadosDaca: dd, manuais: mm, ano, dataAtrib, unidadeSede, ataTexto, editavel } = ctx;
 
-  // ============================================================
-  // CÁLCULO AUTOMÁTICO DA JORNADA (ITEM 9)
-  // ============================================================
   let jornadaAuto = '';
   let totalBase = 0;
   let keyBase = null;
 
-  // Tenta pegar da Fase I (Lotação)
   if (dd.titular && dd.titular.length > 0) {
     totalBase = dd.titular.reduce((s, r) => s + (Number(r.lesson_count) || 0), 0);
     keyBase = `${dd.titular[0].assignment_id}|titular`;
   } 
-  // Se não tiver Fase I, tenta da Fase II (Carga)
   else if (dd.carga && dd.carga.length > 0) {
     totalBase = dd.carga.reduce((s, r) => s + (Number(r.lesson_count) || 0), 0);
     keyBase = `${dd.carga[0].assignment_id}|carga`;
@@ -311,11 +314,9 @@ function renderDocumento(ctx) {
   const regraBase = aplicarRegraHEC(totalBase);
   if (regraBase) jornadaAuto = regraBase.total_sm;
   
-  // Se o usuário editou manualmente o Total SM na tabela, usa esse valor
   if (keyBase && mm[keyBase] && mm[keyBase].total_sm) {
     jornadaAuto = mm[keyBase].total_sm;
   }
-  // O valor final prioriza o que está salvo no professor, se não tiver, usa o calculado
   const valorJornada = dp.jornada || jornadaAuto || '';
 
   const inputTag = (id, valor, campo, classe) => editavel ? `<input class="field-doc ${classe||''}" id="${id}" data-campo="${campo}" value="${esc(valor||'')}">` : `<span style="font-size:9px;">${esc(valor || '—')}</span>`;
@@ -518,7 +519,6 @@ function renderLinhasBlocoSubstituicao(deixou, assumiu, mm, editavel) {
   const rowspan = (escolasDeixou.length || 1) + (escolasAssumiu.length || 1) + 2;
   let html = '';
 
-  // Subtítulo Deixou
   html += `<tr>
     <td class="bloco-label" rowspan="${rowspan}">III - Substituição</td>
     <td colspan="13" class="subtitulo">Deixou as seguintes Classes:</td>
@@ -559,7 +559,6 @@ function renderLinhasBlocoSubstituicao(deixou, assumiu, mm, editavel) {
     });
   }
 
-  // Subtítulo Assumiu
   html += `<tr><td colspan="13" class="subtitulo">Assumiu as seguintes Classes:</td></tr>`;
 
   if (escolasAssumiu.length === 0) {
@@ -599,6 +598,36 @@ function renderLinhasBlocoSubstituicao(deixou, assumiu, mm, editavel) {
   }
 
   return html;
+}
+
+// ============================================================
+// EXPORTAR PDF
+// ============================================================
+async function exportarPDF() {
+  const elemento = document.querySelector('.doc');
+  if (!elemento) return toast('Nenhum documento carregado', 'error');
+  
+  // Remove qualquer foco de input para não sair com fundo amarelo no PDF
+  if (document.activeElement) document.activeElement.blur();
+
+  const opt = {
+    margin: 5,
+    filename: `DACA_${new Date().toISOString().slice(0,10)}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+  };
+
+  // Exibe um aviso de carregamento
+  toast('Gerando PDF...', 'success');
+  
+  try {
+    await html2pdf().set(opt).from(elemento).save();
+    toast('PDF gerado com sucesso!', 'success');
+  } catch (error) {
+    console.error(error);
+    toast('Erro ao gerar PDF', 'error');
+  }
 }
 
 async function salvarDaca() {
@@ -662,7 +691,6 @@ async function salvarDaca() {
     if (!r) return;
     const nomeEscola = nomeCurto(r.school_name, r.school_short_name);
     
-    // Pegar todas as turmas dessa escola nesse bloco
     const turmasDoGrupo = todas.filter(x => x.bloco === a.bloco && nomeCurto(x.school_name, x.school_short_name) === nomeEscola);
     
     turmasDoGrupo.forEach(t => {
