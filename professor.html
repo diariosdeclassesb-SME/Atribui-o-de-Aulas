@@ -253,7 +253,10 @@ function gerarResumoTurmas(dd) {
     });
     return Object.keys(res).map(e => `${e} (${res[e].join(', ')})`).join('; ');
   }
-  if (dd.titular.length > 0) partes.push(`Titular: ${agrupar(dd.titular)}`);
+  
+  // AQUI FOI ALTERADO DE "TITULAR" PARA "LOTAÇÃO"
+  if (dd.titular.length > 0) partes.push(`Lotação: ${agrupar(dd.titular)}`);
+  
   if (dd.carga.length > 0) partes.push(`Carga Suplementar: ${agrupar(dd.carga)}`);
   if (dd.assumiu.length > 0) partes.push(`Substituições Assumidas: ${agrupar(dd.assumiu)}`);
   if (dd.deixou.length > 0) partes.push(`Substituições Deixadas: ${agrupar(dd.deixou)}`);
@@ -607,7 +610,6 @@ async function exportarPDF() {
   const elemento = document.querySelector('.doc');
   if (!elemento) return toast('Nenhum documento carregado', 'error');
   
-  // Remove qualquer foco de input para não sair com fundo amarelo no PDF
   if (document.activeElement) document.activeElement.blur();
 
   const opt = {
@@ -618,7 +620,6 @@ async function exportarPDF() {
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
   };
 
-  // Exibe um aviso de carregamento
   toast('Gerando PDF...', 'success');
   
   try {
