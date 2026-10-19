@@ -45,10 +45,11 @@
   .modal h3 { margin: 0 0 16px; font-size: 16px; }
   .modal .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
   
-  /* Tom Select */
+  /* Ajustes do Tom Select */
   .ts-wrapper { width: 100%; }
-  .ts-control { padding: 8px 10px; font-size: 14px; border-radius: 6px; }
+  .ts-control { min-height: 38px; padding: 8px 10px; font-size: 14px; border-radius: 6px; display: flex; align-items: center; }
   .ts-dropdown { font-size: 14px; }
+  .ts-dropdown .option { padding: 8px 10px; }
 </style>
 </head>
 <body>
@@ -116,18 +117,22 @@
   <section class="panel" id="panel-ofertas">
     <div class="card">
       <div class="form-row">
-        <div><label>Turma</label><select id="oferta-turma"></select></div>
+        <!-- NOVO CAMPO: FILTRO POR ESCOLA -->
+        <div><label>1. Escola</label><select id="oferta-escola" onchange="atualizarTurmasOferta()" placeholder="Buscar escola..."></select></div>
+        
+        <div><label>2. Turma</label><select id="oferta-turma" placeholder="Escolha a escola primeiro..."></select></div>
+        
         <div>
-          <label>Disciplinas (Selecione uma ou várias)</label>
+          <label>3. Disciplinas (Uma ou várias)</label>
           <select id="oferta-disciplina" multiple></select>
         </div>
-        <div><label>Aulas semanais</label><input id="oferta-aulas" type="number" min="1" value="1" /></div>
+        <div><label>4. Aulas semanais</label><input id="oferta-aulas" type="number" min="1" value="1" /></div>
         <button class="btn btn-primary" onclick="addOferta()">Adicionar</button>
       </div>
     </div>
     <div class="card">
       <div style="margin-bottom: 12px; display: flex; gap: 10px;">
-        <input type="text" id="filtro-tabela" placeholder="🔍 Buscar por escola, turma ou disciplina..." onkeyup="renderOfertas()" style="flex: 1; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;" />
+        <input type="text" id="filtro-tabela" placeholder="🔍 Buscar na tabela por escola, turma ou disciplina..." onkeyup="renderOfertas()" style="flex: 1; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;" />
       </div>
       <table>
         <thead>
@@ -151,7 +156,7 @@
         <div><label>E-mail (opcional)</label><input id="prof-email" type="email" /></div>
         <div><label>RG</label><input id="prof-rg" placeholder="Ex: 00.000.000-0" /></div>
         <div><label>CPF</label><input id="prof-cpf" placeholder="Ex: 000.000.000-00" /></div>
-        <div><label>Disciplina</label><select id="prof-disciplina"></select></div>
+        <div><label>Disciplina</label><select id="prof-disciplina" placeholder="Buscar disciplina..."></select></div>
         <button class="btn btn-primary" onclick="addProfessor()">Adicionar</button>
       </div>
     </div>
@@ -161,7 +166,7 @@
   </section>
 </div>
 
-<!-- Modal edição escola -->
+<!-- Modais... -->
 <div class="modal-bg" id="modal-escola">
   <div class="modal">
     <h3>Editar escola</h3>
@@ -177,7 +182,6 @@
   </div>
 </div>
 
-<!-- Modal edição professor -->
 <div class="modal-bg" id="modal-prof">
   <div class="modal">
     <h3>Editar professor</h3>
@@ -196,7 +200,6 @@
   </div>
 </div>
 
-<!-- Modal Duplicar Ofertas -->
 <div class="modal-bg" id="modal-duplicar">
   <div class="modal">
     <h3>Duplicar Ofertas da Turma</h3>
@@ -209,7 +212,7 @@
       </div>
       <div>
         <label>Copiar para a Turma (Destino)</label>
-        <select id="dup-destino-id"></select>
+        <select id="dup-destino-id" placeholder="Buscar turma..."></select>
       </div>
     </div>
     <div class="actions">
@@ -279,23 +282,64 @@ async function carregarTudo() {
 }
 
 function preencherSelects() {
+  // Turma - Escola (Tom Select)
+  if ($('turma-escola').tomselect) $('turma-escola').tomselect.destroy();
   $('turma-escola').innerHTML = escolas.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
-  
-  $('oferta-turma').innerHTML = turmas.map(t => `<option value="${t.id}">${esc(t.schools?.name)} — ${esc(t.name)} (${esc(t.period)})</option>`).join('');
-  
-  const optDisc = disciplinas.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('');
-  
-  // Inicializa o TomSelect para multi-seleção de disciplinas
+  new TomSelect('#turma-escola', { create: false, sortField: 'text' });
+
+  // NOVO: Oferta - Escola (Tom Select)
+  if ($('oferta-escola').tomselect) $('oferta-escola').tomselect.destroy();
+  $('oferta-escola').innerHTML = '<option value="">Selecione a escola...</option>' + escolas.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
+  new TomSelect('#oferta-escola', { create: false, sortField: 'text' });
+
+  // Inicializa Turma da Oferta vazia (será preenchida ao escolher a escola)
+  if ($('oferta-turma').tomselect) $('oferta-turma').tomselect.destroy();
+  $('oferta-turma').innerHTML = '<option value="">Escolha a escola primeiro...</option>';
+  new TomSelect('#oferta-turma', { create: false });
+
+  // Oferta - Disciplinas (Múltiplas)
   if ($('oferta-disciplina').tomselect) $('oferta-disciplina').tomselect.destroy();
-  $('oferta-disciplina').innerHTML = optDisc;
+  $('oferta-disciplina').innerHTML = disciplinas.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('');
   new TomSelect('#oferta-disciplina', {
     plugins: ['remove_button'],
     maxItems: null,
     placeholder: "Selecione as disciplinas..."
   });
 
-  $('prof-disciplina').innerHTML = optDisc;
-  $('edit-prof-disciplina').innerHTML = optDisc;
+  // Professor - Disciplina (Tom Select)
+  if ($('prof-disciplina').tomselect) $('prof-disciplina').tomselect.destroy();
+  $('prof-disciplina').innerHTML = disciplinas.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('');
+  new TomSelect('#prof-disciplina', { create: false, sortField: 'text' });
+
+  // Edição de Professor - Disciplina (Tom Select)
+  if ($('edit-prof-disciplina').tomselect) $('edit-prof-disciplina').tomselect.destroy();
+  $('edit-prof-disciplina').innerHTML = disciplinas.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('');
+  new TomSelect('#edit-prof-disciplina', { create: false, sortField: 'text' });
+}
+
+// NOVA FUNÇÃO: Atualiza as turmas com base na escola escolhida
+function atualizarTurmasOferta() {
+  const schoolId = $('oferta-escola').value;
+  
+  if ($('oferta-turma').tomselect) {
+    $('oferta-turma').tomselect.destroy();
+  }
+
+  if (!schoolId) {
+    $('oferta-turma').innerHTML = '<option value="">Escolha a escola primeiro...</option>';
+    new TomSelect('#oferta-turma', { create: false });
+    return;
+  }
+
+  const turmasFiltradas = turmas.filter(t => t.schools?.name === escolas.find(e => e.id === schoolId)?.name); // Filtra pelo ID da escola
+  
+  // Na verdade, a tabela classes tem school_id. Vamos usar isso.
+  const turmasDaEscola = turmas.filter(t => t.school_id === schoolId);
+
+  $('oferta-turma').innerHTML = '<option value="">Selecione a turma...</option>' + 
+    turmasDaEscola.map(t => `<option value="${t.id}">${esc(t.name)} (${esc(t.period)})</option>`).join('');
+  
+  new TomSelect('#oferta-turma', { create: false, sortField: 'text' });
 }
 
 function renderEscolas() {
@@ -426,10 +470,10 @@ async function delTurma(id) {
   toast('Turma removida'); carregarTudo();
 }
 
-// --- Ofertas: Cadastro em Lote e Edição Rápida ---
+// --- Ofertas ---
 async function addOferta() {
   const class_id = $('oferta-turma').value;
-  const discipline_ids = $('oferta-disciplina').tomselect.getValue(); // Retorna array
+  const discipline_ids = $('oferta-disciplina').tomselect.getValue();
   const lesson_count = parseInt($('oferta-aulas').value, 10);
   
   if (!class_id || discipline_ids.length === 0 || !lesson_count) return toast('Preencha todos os campos', true);
@@ -438,9 +482,7 @@ async function addOferta() {
   
   const { error } = await supabaseClient.from('class_disciplines').insert(inserts);
   if (error) {
-    if (error.code === '23505') { // unique violation
-      return toast('Uma das disciplinas selecionadas já está cadastrada nesta turma.', true);
-    }
+    if (error.code === '23505') return toast('Uma das disciplinas selecionadas já está cadastrada nesta turma.', true);
     return toast(error.message, true);
   }
   
@@ -458,7 +500,6 @@ async function updateOferta(id, novoValor) {
   const { error } = await supabaseClient.from('class_disciplines').update({ lesson_count }).eq('id', id);
   if (error) return toast(error.message, true);
   toast('Quantidade de aulas atualizada!');
-  // Atualiza o cache local para não precisar recarregar a página toda
   const oferta = ofertas.find(o => o.id === id);
   if (oferta) oferta.lesson_count = lesson_count;
 }
@@ -470,7 +511,7 @@ async function delOferta(id) {
   toast('Oferta removida'); carregarTudo();
 }
 
-// --- Duplicar Ofertas de uma Turma ---
+// --- Duplicar Ofertas ---
 function abrirModalDuplicar(classId) {
   const turmaOrigem = turmas.find(t => t.id === classId);
   if (!turmaOrigem) return;
@@ -478,12 +519,16 @@ function abrirModalDuplicar(classId) {
   $('dup-origem-id').value = classId;
   $('dup-origem-nome').value = `${turmaOrigem.schools?.name} — ${turmaOrigem.name} (${turmaOrigem.period})`;
 
-  // Popula os destinos, exceto a própria origem
   const destinos = turmas.filter(t => t.id !== classId);
+  
+  if ($('dup-destino-id').tomselect) $('dup-destino-id').tomselect.destroy();
+  
   $('dup-destino-id').innerHTML = destinos.map(t => 
     `<option value="${t.id}">${esc(t.schools?.name)} — ${esc(t.name)} (${esc(t.period)})</option>`
   ).join('');
-
+  
+  new TomSelect('#dup-destino-id', { create: false, sortField: 'text' });
+  
   $('modal-duplicar').classList.add('show');
 }
 
@@ -499,7 +544,6 @@ async function confirmarDuplicar() {
   const ofertasOrigem = ofertas.filter(o => o.classes?.id === origemId);
   if (ofertasOrigem.length === 0) return toast('A turma de origem não possui ofertas.', true);
 
-  // Verifica se o destino já tem ofertas para evitar duplicar a mesma disciplina
   const ofertasDestino = ofertas.filter(o => o.classes?.id === destinoId);
 
   const inserts = [];
@@ -551,7 +595,14 @@ function abrirEdicaoProf(id) {
   const p = professores.find(x => x.id === id); if (!p) return;
   $('edit-prof-id').value = p.id; $('edit-prof-nome').value = p.full_name || '';
   $('edit-prof-email').value = p.email || ''; $('edit-prof-rg').value = p.rg || '';
-  $('edit-prof-cpf').value = p.cpf || ''; $('edit-prof-disciplina').value = p.discipline_id || '';
+  $('edit-prof-cpf').value = p.cpf || '';
+  
+  if ($('edit-prof-disciplina').tomselect) {
+    $('edit-prof-disciplina').tomselect.setValue(p.discipline_id || '');
+  } else {
+    $('edit-prof-disciplina').value = p.discipline_id || '';
+  }
+  
   $('modal-prof').classList.add('show');
 }
 function fecharModalProf() { $('modal-prof').classList.remove('show'); }
