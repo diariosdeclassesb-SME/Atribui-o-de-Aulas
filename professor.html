@@ -46,15 +46,17 @@
   .field-doc:focus { background: #fef3c7; outline: 1px solid #f59e0b; }
   .field-doc.auto { background: #f3f4f6; }
 
+  /* Tabela Única */
   table.bloco { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 9px; table-layout: fixed; }
   table.bloco th, table.bloco td { border: 1px solid #000; padding: 1px 3px; vertical-align: middle; }
-  table.bloco th { background: #f3f4f6; font-weight: 700; text-align: center; font-size: 8px; line-height: 1.15; }
+  table.bloco th { background: #f3f4f6; font-weight: 700; text-align: center; font-size: 8px; line-height: 1.15; word-break: break-word; }
 
-  td.bloco-label { writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; font-weight: 700; font-size: 8px; padding: 4px 0 !important; width: 22px; white-space: nowrap; vertical-align: middle; background: #fafafa; letter-spacing: .3px; }
+  td.bloco-label { writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; font-weight: 700; font-size: 8.5px; padding: 4px 0 !important; width: 28px; white-space: nowrap; vertical-align: middle; background: #fafafa; letter-spacing: .3px; }
   td.subtitulo { background: #f3f4f6; text-align: center; font-weight: 700; font-size: 9px; padding: 3px; }
   .field-edit { width: 100%; border: none; background: transparent; font-size: 9px; text-align: center; padding: 0; font-family: inherit; }
   .field-edit:focus { background: #fef3c7; outline: 1px solid #f59e0b; }
   .assinatura-por-linha { display: block; border-bottom: 1px solid #000; height: 14px; margin: 2px 3px; }
+  
   .ata-box { border: 1px solid #000; border-top: none; padding: 4px 8px; font-size: 8px; line-height: 1.35; text-align: justify; min-height: 90px; }
   .ata-box .ata-label { font-weight: 700; }
   .ata-box:focus { outline: 2px solid #f59e0b; outline-offset: -2px; }
@@ -148,9 +150,6 @@ const SUPABASE_URL = 'https://dflzprsopnwgobcxuqfu.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_HAMF9aaI6tEtztq4pXAVPw_PM_9wyad';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ============================================================
-// Tabela de regras de H.E.C / H.A / H.L.L.E / Total SM
-// ============================================================
 const REGRAS_HEC = {
   16: { hec: 2, ha: 2, hlle: 5, total_sm: '25/125' },
   18: { hec: 2, ha: 2, hlle: 6, total_sm: '28/140' },
@@ -233,12 +232,8 @@ function calcularUnidadeSede(dd) {
   return Object.keys(contagem).sort((a,b) => contagem[b] - contagem[a])[0] || '—';
 }
 
-// ============================================================
-// NOVA FUNÇÃO: GERAR RESUMO COMPLETO DAS TURMAS PARA A ATA
-// ============================================================
 function gerarResumoTurmas(dd) {
   const partes = [];
-  
   function agrupar(lista) {
     const res = {};
     lista.forEach(t => {
@@ -250,19 +245,16 @@ function gerarResumoTurmas(dd) {
     });
     return Object.keys(res).map(e => `${e} (${res[e].join(', ')})`).join('; ');
   }
-
   if (dd.titular.length > 0) partes.push(`Titular: ${agrupar(dd.titular)}`);
   if (dd.carga.length > 0) partes.push(`Carga Suplementar: ${agrupar(dd.carga)}`);
   if (dd.assumiu.length > 0) partes.push(`Substituições Assumidas: ${agrupar(dd.assumiu)}`);
   if (dd.deixou.length > 0) partes.push(`Substituições Deixadas: ${agrupar(dd.deixou)}`);
-
   return partes.join(' | ');
 }
 
 function gerarAtaDoTemplate(professorNome, turmasTexto) {
   const tpl = settings.ata_template;
   if (!tpl) return 'Aos <strong>_____</strong> dias do mês de <strong>_____</strong>, reuniu-se a Comissão de Atribuição para proceder às escolhas do professor <strong>' + esc(professorNome) + '</strong> para as turmas <strong>' + esc(turmasTexto) + '</strong>. (clique aqui para editar)';
-
   let texto = tpl.replace(/\{\{professor\}\}/g, professorNome).replace(/\{\{turmas\}\}/g, turmasTexto);
   const partes = ['<strong>' + professorNome + '</strong>', '<strong>' + turmasTexto + '</strong>'];
   let i = 0;
@@ -277,7 +269,6 @@ function renderizar() {
   const dataAtrib = $('data-atribuicao').value ? dataBR($('data-atribuicao').value) : dataHojeBR();
   const unidadeSede = calcularUnidadeSede(dadosDaca);
 
-  // Usa a nova função para gerar o texto da ATA
   const listaTurmas = gerarResumoTurmas(dadosDaca);
   const ataTexto = gerarAtaDoTemplate(prof.full_name, listaTurmas);
 
@@ -299,6 +290,34 @@ function totaisPorPeriodo(lista) {
 function renderDocumento(ctx) {
   const { settings, professor, dadosProf: dp, dadosDaca: dd, manuais: mm, ano, dataAtrib, unidadeSede, ataTexto, editavel } = ctx;
 
+  // ============================================================
+  // CÁLCULO AUTOMÁTICO DA JORNADA (ITEM 9)
+  // ============================================================
+  let jornadaAuto = '';
+  let totalBase = 0;
+  let keyBase = null;
+
+  // Tenta pegar da Fase I (Lotação)
+  if (dd.titular && dd.titular.length > 0) {
+    totalBase = dd.titular.reduce((s, r) => s + (Number(r.lesson_count) || 0), 0);
+    keyBase = `${dd.titular[0].assignment_id}|titular`;
+  } 
+  // Se não tiver Fase I, tenta da Fase II (Carga)
+  else if (dd.carga && dd.carga.length > 0) {
+    totalBase = dd.carga.reduce((s, r) => s + (Number(r.lesson_count) || 0), 0);
+    keyBase = `${dd.carga[0].assignment_id}|carga`;
+  }
+
+  const regraBase = aplicarRegraHEC(totalBase);
+  if (regraBase) jornadaAuto = regraBase.total_sm;
+  
+  // Se o usuário editou manualmente o Total SM na tabela, usa esse valor
+  if (keyBase && mm[keyBase] && mm[keyBase].total_sm) {
+    jornadaAuto = mm[keyBase].total_sm;
+  }
+  // O valor final prioriza o que está salvo no professor, se não tiver, usa o calculado
+  const valorJornada = dp.jornada || jornadaAuto || '';
+
   const inputTag = (id, valor, campo, classe) => editavel ? `<input class="field-doc ${classe||''}" id="${id}" data-campo="${campo}" value="${esc(valor||'')}">` : `<span style="font-size:9px;">${esc(valor || '—')}</span>`;
   const selectTag = (id, valor, campo, opcoes) => {
     if (!editavel) return `<span style="font-size:9px;">${esc(valor || '—')}</span>`;
@@ -313,21 +332,32 @@ function renderDocumento(ctx) {
   const logo = settings.logo_url;
   const logoHtml = logo ? `<img src="${esc(logo)}" alt="Brasão" onerror="this.style.display='none';this.parentNode.innerHTML='BRASÃO';">` : 'BRASÃO';
 
-  const colgroupHtml = `<colgroup><col style="width:22px"><col style="width:70px"><col><col style="width:24px"><col style="width:24px"><col style="width:24px"><col style="width:36px"><col style="width:36px"><col style="width:44px"><col style="width:36px"><col style="width:36px"><col style="width:36px"><col style="width:56px"><col style="width:70px"></colgroup>`;
+  const colgroupHtml = `
+    <colgroup>
+      <col style="width:28px"> <!-- Fase -->
+      <col style="width:75px"> <!-- Unidade -->
+      <col> <!-- Classes -->
+      <col style="width:24px"><col style="width:24px"><col style="width:24px"> <!-- M T N -->
+      <col style="width:36px"><col style="width:36px"> <!-- Livre Subs -->
+      <col style="width:44px"> <!-- Nº Aulas Semanais -->
+      <col style="width:36px"><col style="width:36px"><col style="width:36px"> <!-- HEC HA HLLE -->
+      <col style="width:65px"> <!-- Total SM -->
+      <col style="width:80px"> <!-- Assinatura -->
+    </colgroup>`;
 
   const theadHtml = `
     <thead>
       <tr>
-        <th rowspan="2" class="bloco-label">Bloco</th>
+        <th rowspan="2" class="bloco-label">Fase</th>
         <th rowspan="2">Unidade Escolar</th>
         <th rowspan="2">Classes Atribuídas</th>
         <th colspan="3">Período</th>
         <th colspan="2">Situação das Aulas</th>
-        <th rowspan="2">Nº de Aulas Semanais</th>
+        <th rowspan="2">Nº de Aulas<br>Semanais</th>
         <th rowspan="2">H.E.C</th>
         <th rowspan="2">H.A</th>
         <th rowspan="2">H.L.L.E</th>
-        <th rowspan="2">Total de Aulas Semanal/Mensal</th>
+        <th rowspan="2">Total de Aulas<br>Semanal/Mensal</th>
         <th rowspan="2">Assinatura</th>
       </tr>
       <tr><th>M</th><th>T</th><th>N</th><th>Livre</th><th>Subs.</th></tr>
@@ -358,7 +388,7 @@ function renderDocumento(ctx) {
       <div class="cell"><span class="num">7- RG:</span>${editavel ? `<input class="field-doc" id="f-rg" value="${esc(professor.rg || dp.rg || '')}">` : `<span style="font-size:9px;">${esc(professor.rg || dp.rg || '—')}</span>`}</div>
       <div class="cell"><span class="num">8- CPF:</span>${editavel ? `<input class="field-doc" id="f-cpf" value="${esc(professor.cpf || dp.cpf || '')}">` : `<span style="font-size:9px;">${esc(professor.cpf || dp.cpf || '—')}</span>`}</div>
 
-      <div class="cell"><span class="num">9- Jornada:</span>${inputTag('f-jornada', dp.jornada, 'jornada')}</div>
+      <div class="cell"><span class="num">9- Jornada:</span>${inputTag('f-jornada', valorJornada, 'jornada')}</div>
       <div class="cell"><span class="num">10- Categoria:</span>${selectTag('f-categoria', dp.categoria, 'categoria', ['Efetivo', 'Efetivo em Período Probatório'])}</div>
       <div class="cell"><span class="num">11- Afastamento:</span>${selectTag('f-afastamento', dp.afastamento, 'afastamento', ['Professor Mediador','Centro Técnico e Pedagógico','Vice Diretor','Diretor de Planejamento','Secretário Adjunto de Educação','Secretário de Educação','Professor Auxiliar'])}</div>
       <div class="cell"><span class="num">12- Carga Suplementar:</span>${selectTag('f-carga-sup', dp.carga_suplementar, 'carga_suplementar', ['Sim', 'Não'])}</div>
@@ -367,9 +397,15 @@ function renderDocumento(ctx) {
       <div class="cell row-last" style="border-right:none;border-bottom:none;"></div>
     </div>
 
-    ${renderTabelaBloco('I - Titular', 'titular', dd.titular, mm, editavel, true, colgroupHtml, theadHtml)}
-    ${renderTabelaBloco('II - Carga Suplem.', 'carga', dd.carga, mm, editavel, false, colgroupHtml, '')}
-    ${renderTabelaBlocoSubstituicao(dd.deixou, dd.assumiu, mm, editavel, colgroupHtml)}
+    <table class="bloco">
+      ${colgroupHtml}
+      ${theadHtml}
+      <tbody>
+        ${renderLinhasBloco('I - Lotação', 'titular', dd.titular, mm, editavel)}
+        ${renderLinhasBloco('II - Carga Suplem.', 'carga', dd.carga, mm, editavel)}
+        ${renderLinhasBlocoSubstituicao(dd.deixou, dd.assumiu, mm, editavel)}
+      </tbody>
+    </table>
 
     <div class="ata-box" ${editavel ? 'contenteditable="true"' : ''} id="ata-texto">
       <span class="ata-label">ATA:</span> ${ataTexto}
@@ -381,7 +417,7 @@ function renderDocumento(ctx) {
     </div>`;
 }
 
-function renderTabelaBloco(rotulo, bloco, lista, mm, editavel, comThead, colgroupHtml, theadHtml) {
+function renderLinhasBloco(rotulo, bloco, lista, mm, editavel) {
   const temLinhas = lista && lista.length > 0;
   const totais = totaisPorPeriodo(lista || []);
   const totalSemanal = (lista || []).reduce((s, r) => s + (Number(r.lesson_count) || 0), 0);
@@ -397,64 +433,65 @@ function renderTabelaBloco(rotulo, bloco, lista, mm, editavel, comThead, colgrou
   });
   const escolasOrdenadas = Object.keys(grupos).sort();
 
-  let corpo = '';
   if (!temLinhas) {
-    corpo = `<tr><td class="bloco-label" rowspan="1">${rotulo}</td><td colspan="13" style="text-align:center;color:#6b7280;">Nenhuma turma neste bloco</td></tr>`;
-  } else {
-    const rowspan = escolasOrdenadas.length;
-    corpo = escolasOrdenadas.map((escola, i) => {
-      const turmas = grupos[escola];
-      const primeira = i === 0;
-
-      const turmasLabel = turmas.map(t => {
-        const ab = abreviarDisciplina(t.discipline_name);
-        return ab ? `${t.class_name} (${ab})` : t.class_name;
-      }).join(', ');
-
-      const key = `${turmas[0].assignment_id}|${bloco}`;
-      const m = mm[key] || { hec: '', ha: '', hll: '', total_sm: '' };
-      const val = v => v === null || v === undefined || v === '' ? '' : v;
-
-      let hecVal = m.hec, haVal = m.ha, hllVal = m.hll, totalSmVal = m.total_sm;
-      if (primeira && regra) {
-        if (isVazio(hecVal)) hecVal = regra.hec;
-        if (isVazio(haVal)) haVal = regra.ha;
-        if (isVazio(hllVal)) hllVal = regra.hlle;
-        if (isVazio(totalSmVal)) totalSmVal = regra.total_sm;
-      }
-
-      const colM = primeira ? totais.M || '' : '';
-      const colT = primeira ? totais.T || '' : '';
-      const colN = primeira ? totais.N || '' : '';
-      const colLivre = primeira ? totalLivre || '' : '';
-      const colSubs = primeira ? totalSubs || '' : '';
-      const colAulasSemanais = primeira ? totalSemanal || '' : '';
-
-      const inputEdit = (campo, valor) => editavel ? `<input class="field-edit" type="text" data-key="${key}" data-campo="${campo}" value="${val(valor)}">` : `<span style="font-size:9px;">${val(valor) || ''}</span>`;
-
-      return `<tr>
-        ${i === 0 ? `<td class="bloco-label" rowspan="${rowspan}">${rotulo}</td>` : ''}
-        <td>${esc(escola)}</td>
-        <td>${esc(turmasLabel)}</td>
-        <td style="text-align:center;">${colM}</td>
-        <td style="text-align:center;">${colT}</td>
-        <td style="text-align:center;">${colN}</td>
-        <td style="text-align:center;">${colLivre}</td>
-        <td style="text-align:center;">${colSubs}</td>
-        <td style="text-align:center;">${colAulasSemanais}</td>
-        <td>${inputEdit('hec', hecVal)}</td>
-        <td>${inputEdit('ha', haVal)}</td>
-        <td>${inputEdit('hll', hllVal)}</td>
-        <td>${inputEdit('total_sm', totalSmVal)}</td>
-        <td><div class="assinatura-por-linha"></div></td>
-      </tr>`;
-    }).join('');
+    return `<tr><td class="bloco-label">${rotulo}</td><td colspan="13" style="text-align:center;color:#6b7280;">Nenhuma turma neste bloco</td></tr>`;
   }
 
-  return `<table class="bloco">${colgroupHtml}${comThead ? theadHtml : ''}<tbody>${corpo}</tbody></table>`;
+  const rowspan = escolasOrdenadas.length;
+  let html = '';
+  
+  escolasOrdenadas.forEach((escola, i) => {
+    const turmas = grupos[escola];
+    const primeira = i === 0;
+
+    const turmasLabel = turmas.map(t => {
+      const ab = abreviarDisciplina(t.discipline_name);
+      return ab ? `${t.class_name} (${ab})` : t.class_name;
+    }).join(', ');
+
+    const key = `${turmas[0].assignment_id}|${bloco}`;
+    const m = mm[key] || { hec: '', ha: '', hll: '', total_sm: '' };
+    const val = v => v === null || v === undefined || v === '' ? '' : v;
+
+    let hecVal = m.hec, haVal = m.ha, hllVal = m.hll, totalSmVal = m.total_sm;
+    if (primeira && regra) {
+      if (isVazio(hecVal)) hecVal = regra.hec;
+      if (isVazio(haVal)) haVal = regra.ha;
+      if (isVazio(hllVal)) hllVal = regra.hlle;
+      if (isVazio(totalSmVal)) totalSmVal = regra.total_sm;
+    }
+
+    const colM = primeira ? totais.M || '' : '';
+    const colT = primeira ? totais.T || '' : '';
+    const colN = primeira ? totais.N || '' : '';
+    const colLivre = primeira ? totalLivre || '' : '';
+    const colSubs = primeira ? totalSubs || '' : '';
+    const colAulasSemanais = primeira ? totalSemanal || '' : '';
+
+    const inputEdit = (campo, valor) => editavel ? `<input class="field-edit" type="text" data-key="${key}" data-campo="${campo}" value="${val(valor)}">` : `<span style="font-size:9px;">${val(valor) || ''}</span>`;
+
+    html += `<tr>
+      ${i === 0 ? `<td class="bloco-label" rowspan="${rowspan}">${rotulo}</td>` : ''}
+      <td>${esc(escola)}</td>
+      <td>${esc(turmasLabel)}</td>
+      <td style="text-align:center;">${colM}</td>
+      <td style="text-align:center;">${colT}</td>
+      <td style="text-align:center;">${colN}</td>
+      <td style="text-align:center;">${colLivre}</td>
+      <td style="text-align:center;">${colSubs}</td>
+      <td style="text-align:center;">${colAulasSemanais}</td>
+      <td>${inputEdit('hec', hecVal)}</td>
+      <td>${inputEdit('ha', haVal)}</td>
+      <td>${inputEdit('hll', hllVal)}</td>
+      <td>${inputEdit('total_sm', totalSmVal)}</td>
+      <td><div class="assinatura-por-linha"></div></td>
+    </tr>`;
+  });
+
+  return html;
 }
 
-function renderTabelaBlocoSubstituicao(deixou, assumiu, mm, editavel, colgroupHtml) {
+function renderLinhasBlocoSubstituicao(deixou, assumiu, mm, editavel) {
   const totDeixou = totaisPorPeriodo(deixou || []);
   const totAssumiu = totaisPorPeriodo(assumiu || []);
   const totalAulasDeixou = (deixou || []).reduce((s, r) => s + (Number(r.lesson_count) || 0), 0);
@@ -478,11 +515,17 @@ function renderTabelaBlocoSubstituicao(deixou, assumiu, mm, editavel, colgroupHt
   const escolasDeixou = Object.keys(gruposDeixou).sort();
   const escolasAssumiu = Object.keys(gruposAssumiu).sort();
 
-  const linhas = [];
+  const rowspan = (escolasDeixou.length || 1) + (escolasAssumiu.length || 1) + 2;
+  let html = '';
 
-  linhas.push(`<tr><td colspan="14" class="subtitulo">Deixou as seguintes Classes:</td></tr>`);
+  // Subtítulo Deixou
+  html += `<tr>
+    <td class="bloco-label" rowspan="${rowspan}">III - Substituição</td>
+    <td colspan="13" class="subtitulo">Deixou as seguintes Classes:</td>
+  </tr>`;
+
   if (escolasDeixou.length === 0) {
-    linhas.push(`<tr><td colspan="14" style="text-align:center;color:#6b7280;font-size:9px;">—</td></tr>`);
+    html += `<tr><td colspan="13" style="text-align:center;color:#6b7280;font-size:9px;">—</td></tr>`;
   } else {
     escolasDeixou.forEach((escola, i) => {
       const turmas = gruposDeixou[escola];
@@ -502,7 +545,7 @@ function renderTabelaBlocoSubstituicao(deixou, assumiu, mm, editavel, colgroupHt
 
       const inputEdit = (campo, valor) => editavel ? `<input class="field-edit" type="text" data-key="${key}" data-campo="${campo}" value="${val(valor)}">` : `<span style="font-size:9px;">${val(valor) || ''}</span>`;
 
-      linhas.push(`<tr>
+      html += `<tr>
         <td>${esc(escola)}</td><td>${esc(turmasLabel)}</td>
         <td style="text-align:center;">${primeira ? (totDeixou.M || '') : ''}</td>
         <td style="text-align:center;">${primeira ? (totDeixou.T || '') : ''}</td>
@@ -512,13 +555,15 @@ function renderTabelaBlocoSubstituicao(deixou, assumiu, mm, editavel, colgroupHt
         <td>${inputEdit('hec', hecVal)}</td><td>${inputEdit('ha', haVal)}</td>
         <td>${inputEdit('hll', hllVal)}</td><td>${inputEdit('total_sm', totalSmVal)}</td>
         <td><div class="assinatura-por-linha"></div></td>
-      </tr>`);
+      </tr>`;
     });
   }
 
-  linhas.push(`<tr><td colspan="14" class="subtitulo">Assumiu as seguintes Classes:</td></tr>`);
+  // Subtítulo Assumiu
+  html += `<tr><td colspan="13" class="subtitulo">Assumiu as seguintes Classes:</td></tr>`;
+
   if (escolasAssumiu.length === 0) {
-    linhas.push(`<tr><td colspan="14" style="text-align:center;color:#6b7280;font-size:9px;">—</td></tr>`);
+    html += `<tr><td colspan="13" style="text-align:center;color:#6b7280;font-size:9px;">—</td></tr>`;
   } else {
     escolasAssumiu.forEach((escola, i) => {
       const turmas = gruposAssumiu[escola];
@@ -538,7 +583,7 @@ function renderTabelaBlocoSubstituicao(deixou, assumiu, mm, editavel, colgroupHt
 
       const inputEdit = (campo, valor) => editavel ? `<input class="field-edit" type="text" data-key="${key}" data-campo="${campo}" value="${val(valor)}">` : `<span style="font-size:9px;">${val(valor) || ''}</span>`;
 
-      linhas.push(`<tr>
+      html += `<tr>
         <td>${esc(escola)}</td><td>${esc(turmasLabel)}</td>
         <td style="text-align:center;">${primeira ? (totAssumiu.M || '') : ''}</td>
         <td style="text-align:center;">${primeira ? (totAssumiu.T || '') : ''}</td>
@@ -549,11 +594,11 @@ function renderTabelaBlocoSubstituicao(deixou, assumiu, mm, editavel, colgroupHt
         <td>${inputEdit('hec', hecVal)}</td><td>${inputEdit('ha', haVal)}</td>
         <td>${inputEdit('hll', hllVal)}</td><td>${inputEdit('total_sm', totalSmVal)}</td>
         <td><div class="assinatura-por-linha"></div></td>
-      </tr>`);
+      </tr>`;
     });
   }
 
-  return `<table class="bloco">${colgroupHtml}<tbody><tr><td class="bloco-label" rowspan="${linhas.length}">III - Substituição</td><td colspan="13" style="padding:0;border:none;"><table style="width:100%;border-collapse:collapse;table-layout:fixed;"><colgroup><col style="width:70px"><col><col style="width:24px"><col style="width:24px"><col style="width:24px"><col style="width:36px"><col style="width:36px"><col style="width:44px"><col style="width:36px"><col style="width:36px"><col style="width:36px"><col style="width:56px"><col style="width:70px"></colgroup><tbody>${linhas.join('')}</tbody></table></td></tr></tbody></table>`;
+  return html;
 }
 
 async function salvarDaca() {
@@ -610,17 +655,33 @@ async function salvarDaca() {
   if (errRec) return toast('Erro DACA: ' + errRec.message, 'error');
 
   const todas = [...dadosDaca.titular, ...dadosDaca.carga, ...dadosDaca.deixou, ...dadosDaca.assumiu];
-  const registros = Object.values(agrupados).map(a => {
+  const registros = [];
+  
+  Object.values(agrupados).forEach(a => {
     const r = todas.find(x => x.assignment_id === a.assignment_id && x.bloco === a.bloco);
-    if (!r) return null;
-    return {
-      daca_record_id: rec.id, assignment_id: r.assignment_id, bloco: a.bloco,
-      school_name: nomeCurto(r.school_name, r.school_short_name), class_name: r.class_name,
-      class_period: r.class_period, discipline_name: r.discipline_name, lesson_count: r.lesson_count,
-      hec: a.hec ? parseInt(a.hec, 10) : 0, ha: a.ha ? parseInt(a.ha, 10) : 0,
-      hll: a.hll ? parseInt(a.hll, 10) : 0, total_sm: a.total_sm || null,
-    };
-  }).filter(Boolean);
+    if (!r) return;
+    const nomeEscola = nomeCurto(r.school_name, r.school_short_name);
+    
+    // Pegar todas as turmas dessa escola nesse bloco
+    const turmasDoGrupo = todas.filter(x => x.bloco === a.bloco && nomeCurto(x.school_name, x.school_short_name) === nomeEscola);
+    
+    turmasDoGrupo.forEach(t => {
+      registros.push({
+        daca_record_id: rec.id,
+        assignment_id: t.assignment_id,
+        bloco: a.bloco,
+        school_name: nomeEscola,
+        class_name: t.class_name,
+        class_period: t.class_period,
+        discipline_name: t.discipline_name,
+        lesson_count: t.lesson_count,
+        hec: a.hec ? parseInt(a.hec, 10) : 0,
+        ha: a.ha ? parseInt(a.ha, 10) : 0,
+        hll: a.hll ? parseInt(a.hll, 10) : 0,
+        total_sm: a.total_sm || null,
+      });
+    });
+  });
 
   if (registros.length > 0) {
     const { error: errLinhas } = await supabaseClient.from('daca_records_assignments').insert(registros);
