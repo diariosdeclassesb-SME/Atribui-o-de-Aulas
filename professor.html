@@ -50,32 +50,11 @@
   table.bloco th, table.bloco td { border: 1px solid #000; padding: 1px 3px; vertical-align: middle; }
   table.bloco th { background: #f3f4f6; font-weight: 700; text-align: center; font-size: 8px; line-height: 1.15; }
 
-  td.bloco-label {
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    text-align: center;
-    font-weight: 700;
-    font-size: 8px;
-    padding: 4px 0 !important;
-    width: 22px;
-    white-space: nowrap;
-    vertical-align: middle;
-    background: #fafafa;
-    letter-spacing: .3px;
-  }
-
-  td.subtitulo {
-    background: #f3f4f6;
-    text-align: center;
-    font-weight: 700;
-    font-size: 9px;
-    padding: 3px;
-  }
-
+  td.bloco-label { writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; font-weight: 700; font-size: 8px; padding: 4px 0 !important; width: 22px; white-space: nowrap; vertical-align: middle; background: #fafafa; letter-spacing: .3px; }
+  td.subtitulo { background: #f3f4f6; text-align: center; font-weight: 700; font-size: 9px; padding: 3px; }
   .field-edit { width: 100%; border: none; background: transparent; font-size: 9px; text-align: center; padding: 0; font-family: inherit; }
   .field-edit:focus { background: #fef3c7; outline: 1px solid #f59e0b; }
-  .field-edit::-webkit-outer-spin-button, .field-edit::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-  .assinatura-linha { border-bottom: 1px solid #000; height: 12px; }
+  .assinatura-por-linha { display: block; border-bottom: 1px solid #000; height: 14px; margin: 2px 3px; }
   .ata-box { border: 1px solid #000; border-top: none; padding: 4px 8px; font-size: 8px; line-height: 1.35; text-align: justify; min-height: 90px; }
   .ata-box .ata-label { font-weight: 700; }
   .ata-box:focus { outline: 2px solid #f59e0b; outline-offset: -2px; }
@@ -84,18 +63,11 @@
   .assinaturas-finais .linha { border-top: 1px solid #000; margin-bottom: 3px; height: 1px; }
   .assinaturas-finais .rotulo { font-size: 9px; font-weight: 700; letter-spacing: .5px; }
 
-  .assinatura-por-linha {
-    display: block;
-    border-bottom: 1px solid #000;
-    height: 14px;
-    margin: 2px 3px;
-  }
-
   .daca-list { max-width: 1100px; margin: 20px auto; padding: 0 16px; }
   .daca-list table { width: 100%; background: #fff; border-radius: 8px; overflow: hidden; font-size: 13px; }
   .daca-list th, .daca-list td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; }
   .daca-list th { background: #f9fafb; font-size: 12px; text-transform: uppercase; color: #6b7280; }
-  .daca-list tr:hover td { background: #f9fafb; }
+  
   @media print {
     @page { size: A4 landscape; margin: 5mm; }
     body { background: #fff; font-size: 10px; }
@@ -178,7 +150,6 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 
 // ============================================================
 // Tabela de regras de H.E.C / H.A / H.L.L.E / Total SM
-// Chave = total de aulas do bloco
 // ============================================================
 const REGRAS_HEC = {
   16: { hec: 2, ha: 2, hlle: 5, total_sm: '25/125' },
@@ -190,55 +161,22 @@ const REGRAS_HEC = {
   25: { hec: 2, ha: 4, hlle: 8, total_sm: '39/195' },
   26: { hec: 2, ha: 4, hlle: 8, total_sm: '40/200' },
 };
-
-function aplicarRegraHEC(totalAulas) {
-  return REGRAS_HEC[totalAulas] || null;
-}
-
-function isVazio(v) {
-  return v === null || v === undefined || v === '';
-}
+function aplicarRegraHEC(totalAulas) { return REGRAS_HEC[totalAulas] || null; }
+function isVazio(v) { return v === null || v === undefined || v === ''; }
 
 const MAPA_NOMES_CURTOS = {
-  'Creche Municipal "Estudante Renato Cabral Pereira"': 'Creche I',
-  'Creche Municipal "Vereador Benedito Cantinho Braga Filho – Diquito Braga"': 'Creche II',
-  'Creche Municipal "Vereador Benedito Cantinho Braga Filho - Diquito Braga"': 'Creche II',
-  'E.M.E.F. "Barão de Santa Branca"': 'Barão',
-  'E.M.E.F. "Prof.ª Palmyra Martins Rosa Perillo"': 'Palmyra',
-  'E.M.E.F. "Prof.ª Benedita Pereira de Albuquerque"': 'Benedita',
-  'E.M.E.F. "Prof.ª Francisca Rosa Gomes"': 'Rosa Gomes',
-  'E.M.E.F. "Prof.ª Isaura Martins Rosa de Siqueira"': 'Isaura',
-  'E.M.E.I. "Terezinha do Menino Jesus Porto Wuó"': 'Terezinha',
-  'E.M.E.I.F (R) "Prof.ª Maria Apparecida Fonseca"': 'Fonseca',
-  'E.M.E.I.F (R) "Prof.ª Sylvia Cantinho Braga Campos"': 'Sylvia',
+  'Creche Municipal "Estudante Renato Cabral Pereira"': 'Creche I', 'Creche Municipal "Vereador Benedito Cantinho Braga Filho – Diquito Braga"': 'Creche II', 'Creche Municipal "Vereador Benedito Cantinho Braga Filho - Diquito Braga"': 'Creche II', 'E.M.E.F. "Barão de Santa Branca"': 'Barão', 'E.M.E.F. "Prof.ª Palmyra Martins Rosa Perillo"': 'Palmyra', 'E.M.E.F. "Prof.ª Benedita Pereira de Albuquerque"': 'Benedita', 'E.M.E.F. "Prof.ª Francisca Rosa Gomes"': 'Rosa Gomes', 'E.M.E.F. "Prof.ª Isaura Martins Rosa de Siqueira"': 'Isaura', 'E.M.E.I. "Terezinha do Menino Jesus Porto Wuó"': 'Terezinha', 'E.M.E.I.F (R) "Prof.ª Maria Apparecida Fonseca"': 'Fonseca', 'E.M.E.I.F (R) "Prof.ª Sylvia Cantinho Braga Campos"': 'Sylvia'
 };
-
-function nomeCurto(nomeCompleto, shortName) {
-  if (shortName && shortName.trim()) return shortName.trim();
-  if (MAPA_NOMES_CURTOS[nomeCompleto]) return MAPA_NOMES_CURTOS[nomeCompleto];
-  return nomeCompleto;
-}
+function nomeCurto(nomeCompleto, shortName) { if (shortName && shortName.trim()) return shortName.trim(); if (MAPA_NOMES_CURTOS[nomeCompleto]) return MAPA_NOMES_CURTOS[nomeCompleto]; return nomeCompleto; }
 
 const $ = (id) => document.getElementById(id);
-function toast(msg, tipo = '') {
-  const t = $('toast'); t.textContent = msg;
-  t.className = 'toast show' + (tipo ? ' ' + tipo : '');
-  setTimeout(() => t.className = 'toast', 2500);
-}
+function toast(msg, tipo = '') { const t = $('toast'); t.textContent = msg; t.className = 'toast show' + (tipo ? ' ' + tipo : ''); setTimeout(() => t.className = 'toast', 2500); }
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function dataHojeBR() { return new Date().toLocaleDateString('pt-BR'); }
 function dataBR(iso) { if (!iso) return ''; const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; }
-function abreviarDisciplina(nome) {
-  if (nome === 'História') return 'His.';
-  if (nome === 'Religiosidade') return 'Rel.';
-  return null;
-}
+function abreviarDisciplina(nome) { if (nome === 'História') return 'His.'; if (nome === 'Religiosidade') return 'Rel.'; return null; }
 
-async function requireLogin() {
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if (!session) { window.location.href = 'index.html'; return null; }
-  return session;
-}
+async function requireLogin() { const { data: { session } } = await supabaseClient.auth.getSession(); if (!session) { window.location.href = 'index.html'; return null; } return session; }
 async function logout() { await supabaseClient.auth.signOut(); window.location.href = 'index.html'; }
 
 document.querySelectorAll('.tabs-page button').forEach(btn => {
@@ -258,10 +196,7 @@ let dadosProf = {};
 let teacherAtualId = null;
 let settings = {};
 
-async function carregarSettings() {
-  const { data } = await supabaseClient.from('daca_settings').select('*').eq('id', 1).maybeSingle();
-  settings = data || {};
-}
+async function carregarSettings() { const { data } = await supabaseClient.from('daca_settings').select('*').eq('id', 1).maybeSingle(); settings = data || {}; }
 async function carregarProfessores() {
   const { data, error } = await supabaseClient.from('teachers').select('id, full_name, rg, cpf, disciplines(name)').order('full_name');
   if (error) return toast(error.message, 'error');
@@ -270,18 +205,11 @@ async function carregarProfessores() {
   $('seletor-professor').innerHTML = '<option value="">Selecione...</option>' + opts;
   $('filtro-prof').innerHTML = '<option value="">Todos</option>' + opts;
 }
-async function carregarDadosProf(teacherId) {
-  const { data } = await supabaseClient.from('teacher_daca_data').select('*').eq('teacher_id', teacherId).maybeSingle();
-  dadosProf = data || {};
-}
+async function carregarDadosProf(teacherId) { const { data } = await supabaseClient.from('teacher_daca_data').select('*').eq('teacher_id', teacherId).maybeSingle(); dadosProf = data || {}; }
 async function carregarManuais(teacherId) {
   const { data } = await supabaseClient.from('daca_manual_fields').select('*').eq('teacher_id', teacherId);
   manuais = {};
-  (data || []).forEach(m => {
-    manuais[`${m.assignment_id}|${m.bloco}`] = {
-      hec: m.hec, ha: m.ha, hll: m.hll, total_sm: m.total_sm,
-    };
-  });
+  (data || []).forEach(m => { manuais[`${m.assignment_id}|${m.bloco}`] = { hec: m.hec, ha: m.ha, hll: m.hll, total_sm: m.total_sm }; });
 }
 
 async function carregarDaca(teacherId) {
@@ -305,12 +233,38 @@ function calcularUnidadeSede(dd) {
   return Object.keys(contagem).sort((a,b) => contagem[b] - contagem[a])[0] || '—';
 }
 
-function gerarAtaDoTemplate(professorNome, turmas) {
-  const tpl = settings.ata_template;
-  if (!tpl) return 'Aos <strong>_____</strong> dias do mês de <strong>_____</strong>, reuniu-se a Comissão de Atribuição para proceder às escolhas do professor <strong>' + esc(professorNome) + '</strong> para as turmas <strong>' + esc(turmas) + '</strong>. (clique aqui para editar)';
+// ============================================================
+// NOVA FUNÇÃO: GERAR RESUMO COMPLETO DAS TURMAS PARA A ATA
+// ============================================================
+function gerarResumoTurmas(dd) {
+  const partes = [];
+  
+  function agrupar(lista) {
+    const res = {};
+    lista.forEach(t => {
+      const escola = t.school_name;
+      const ab = abreviarDisciplina(t.discipline_name);
+      const turma = ab ? `${t.class_name} (${ab})` : t.class_name;
+      if (!res[escola]) res[escola] = [];
+      if (!res[escola].includes(turma)) res[escola].push(turma);
+    });
+    return Object.keys(res).map(e => `${e} (${res[e].join(', ')})`).join('; ');
+  }
 
-  let texto = tpl.replace(/\{\{professor\}\}/g, professorNome).replace(/\{\{turmas\}\}/g, turmas);
-  const partes = ['<strong>' + professorNome + '</strong>', '<strong>' + turmas + '</strong>'];
+  if (dd.titular.length > 0) partes.push(`Titular: ${agrupar(dd.titular)}`);
+  if (dd.carga.length > 0) partes.push(`Carga Suplementar: ${agrupar(dd.carga)}`);
+  if (dd.assumiu.length > 0) partes.push(`Substituições Assumidas: ${agrupar(dd.assumiu)}`);
+  if (dd.deixou.length > 0) partes.push(`Substituições Deixadas: ${agrupar(dd.deixou)}`);
+
+  return partes.join(' | ');
+}
+
+function gerarAtaDoTemplate(professorNome, turmasTexto) {
+  const tpl = settings.ata_template;
+  if (!tpl) return 'Aos <strong>_____</strong> dias do mês de <strong>_____</strong>, reuniu-se a Comissão de Atribuição para proceder às escolhas do professor <strong>' + esc(professorNome) + '</strong> para as turmas <strong>' + esc(turmasTexto) + '</strong>. (clique aqui para editar)';
+
+  let texto = tpl.replace(/\{\{professor\}\}/g, professorNome).replace(/\{\{turmas\}\}/g, turmasTexto);
+  const partes = ['<strong>' + professorNome + '</strong>', '<strong>' + turmasTexto + '</strong>'];
   let i = 0;
   texto = texto.replace(/_{5,}/g, () => partes[Math.min(i++, partes.length-1)]);
   return texto;
@@ -323,12 +277,8 @@ function renderizar() {
   const dataAtrib = $('data-atribuicao').value ? dataBR($('data-atribuicao').value) : dataHojeBR();
   const unidadeSede = calcularUnidadeSede(dadosDaca);
 
-  const todas = [...dadosDaca.titular, ...dadosDaca.carga, ...dadosDaca.assumiu];
-  const listaTurmas = [...new Set(todas.map(t => {
-    const ab = abreviarDisciplina(t.discipline_name);
-    return ab ? `${t.class_name} (${ab})` : t.class_name;
-  }))].join(', ') || '—';
-
+  // Usa a nova função para gerar o texto da ATA
+  const listaTurmas = gerarResumoTurmas(dadosDaca);
   const ataTexto = gerarAtaDoTemplate(prof.full_name, listaTurmas);
 
   $('doc').innerHTML = renderDocumento({
@@ -341,7 +291,7 @@ function totaisPorPeriodo(lista) {
   const t = { M: 0, T: 0, N: 0, I: 0 };
   lista.forEach(r => {
     const per = (r.class_period || '').charAt(0).toUpperCase();
-    if (t[per] !== undefined) t[per] += r.lesson_count || 0;
+    if (t[per] !== undefined) t[per] += Number(r.lesson_count) || 0;
   });
   return t;
 }
@@ -349,45 +299,21 @@ function totaisPorPeriodo(lista) {
 function renderDocumento(ctx) {
   const { settings, professor, dadosProf: dp, dadosDaca: dd, manuais: mm, ano, dataAtrib, unidadeSede, ataTexto, editavel } = ctx;
 
-  const inputTag = (id, valor, campo, classe) => editavel
-    ? `<input class="field-doc ${classe||''}" id="${id}" data-campo="${campo}" value="${esc(valor||'')}">`
-    : `<span style="font-size:9px;">${esc(valor || '—')}</span>`;
-
+  const inputTag = (id, valor, campo, classe) => editavel ? `<input class="field-doc ${classe||''}" id="${id}" data-campo="${campo}" value="${esc(valor||'')}">` : `<span style="font-size:9px;">${esc(valor || '—')}</span>`;
   const selectTag = (id, valor, campo, opcoes) => {
     if (!editavel) return `<span style="font-size:9px;">${esc(valor || '—')}</span>`;
-    return `<select class="field-doc" id="${id}" data-campo="${campo}">
-      <option value="">—</option>
-      ${opcoes.map(o => `<option value="${o}" ${valor === o ? 'selected' : ''}>${o}</option>`).join('')}
-    </select>`;
+    return `<select class="field-doc" id="${id}" data-campo="${campo}"><option value="">—</option>${opcoes.map(o => `<option value="${o}" ${valor === o ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
   };
 
   const pref = settings.prefeitura || 'PREFEITURA MUNICIPAL DE SANTA BRANCA';
   const sec = settings.secretaria || 'SECRETARIA MUNICIPAL DE EDUCAÇÃO';
   const end = settings.endereco || 'Rua Independência, s/nº - Centro - Santa Branca – São Paulo – CEP: 12.380-000';
   const tel = settings.telefone || 'Tel: (12) 3972-1686 - 3972-3061';
-  const mail = settings.email || 'semebranca@gmail.com';
+  const mail = settings.email || 'educacao@santabranca.sp.gov.br';
   const logo = settings.logo_url;
-  const logoHtml = logo
-    ? `<img src="${esc(logo)}" alt="Brasão" onerror="this.style.display='none';this.parentNode.innerHTML='BRASÃO';">`
-    : 'BRASÃO';
+  const logoHtml = logo ? `<img src="${esc(logo)}" alt="Brasão" onerror="this.style.display='none';this.parentNode.innerHTML='BRASÃO';">` : 'BRASÃO';
 
-  const colgroupHtml = `
-    <colgroup>
-      <col style="width:22px">
-      <col style="width:70px">
-      <col>
-      <col style="width:24px">
-      <col style="width:24px">
-      <col style="width:24px">
-      <col style="width:36px">
-      <col style="width:36px">
-      <col style="width:44px">
-      <col style="width:36px">
-      <col style="width:36px">
-      <col style="width:36px">
-      <col style="width:56px">
-      <col style="width:70px">
-    </colgroup>`;
+  const colgroupHtml = `<colgroup><col style="width:22px"><col style="width:70px"><col><col style="width:24px"><col style="width:24px"><col style="width:24px"><col style="width:36px"><col style="width:36px"><col style="width:44px"><col style="width:36px"><col style="width:36px"><col style="width:36px"><col style="width:56px"><col style="width:70px"></colgroup>`;
 
   const theadHtml = `
     <thead>
@@ -404,13 +330,7 @@ function renderDocumento(ctx) {
         <th rowspan="2">Total de Aulas Semanal/Mensal</th>
         <th rowspan="2">Assinatura</th>
       </tr>
-      <tr>
-        <th>M</th>
-        <th>T</th>
-        <th>N</th>
-        <th>Livre</th>
-        <th>Subs.</th>
-      </tr>
+      <tr><th>M</th><th>T</th><th>N</th><th>Livre</th><th>Subs.</th></tr>
     </thead>`;
 
   return `
@@ -463,13 +383,10 @@ function renderDocumento(ctx) {
 
 function renderTabelaBloco(rotulo, bloco, lista, mm, editavel, comThead, colgroupHtml, theadHtml) {
   const temLinhas = lista && lista.length > 0;
-
   const totais = totaisPorPeriodo(lista || []);
-  const totalSemanal = (lista || []).reduce((s, r) => s + (r.lesson_count || 0), 0);
+  const totalSemanal = (lista || []).reduce((s, r) => s + (Number(r.lesson_count) || 0), 0);
   const totalLivre = totalSemanal;
   const totalSubs = 0;
-
-  // Aplica regra HEC pelo total do bloco
   const regra = aplicarRegraHEC(totalSemanal);
 
   const grupos = {};
@@ -482,10 +399,7 @@ function renderTabelaBloco(rotulo, bloco, lista, mm, editavel, comThead, colgrou
 
   let corpo = '';
   if (!temLinhas) {
-    corpo = `<tr>
-      <td class="bloco-label" rowspan="1">${rotulo}</td>
-      <td colspan="13" style="text-align:center;color:#6b7280;">Nenhuma turma neste bloco</td>
-    </tr>`;
+    corpo = `<tr><td class="bloco-label" rowspan="1">${rotulo}</td><td colspan="13" style="text-align:center;color:#6b7280;">Nenhuma turma neste bloco</td></tr>`;
   } else {
     const rowspan = escolasOrdenadas.length;
     corpo = escolasOrdenadas.map((escola, i) => {
@@ -501,11 +415,7 @@ function renderTabelaBloco(rotulo, bloco, lista, mm, editavel, comThead, colgrou
       const m = mm[key] || { hec: '', ha: '', hll: '', total_sm: '' };
       const val = v => v === null || v === undefined || v === '' ? '' : v;
 
-      // Aplica regra na primeira linha, se os campos estiverem vazios
-      let hecVal = m.hec;
-      let haVal = m.ha;
-      let hllVal = m.hll;
-      let totalSmVal = m.total_sm;
+      let hecVal = m.hec, haVal = m.ha, hllVal = m.hll, totalSmVal = m.total_sm;
       if (primeira && regra) {
         if (isVazio(hecVal)) hecVal = regra.hec;
         if (isVazio(haVal)) haVal = regra.ha;
@@ -520,9 +430,7 @@ function renderTabelaBloco(rotulo, bloco, lista, mm, editavel, comThead, colgrou
       const colSubs = primeira ? totalSubs || '' : '';
       const colAulasSemanais = primeira ? totalSemanal || '' : '';
 
-      const inputEdit = (campo, valor) => editavel
-        ? `<input class="field-edit" type="text" data-key="${key}" data-campo="${campo}" value="${val(valor)}">`
-        : `<span style="font-size:9px;">${val(valor) || ''}</span>`;
+      const inputEdit = (campo, valor) => editavel ? `<input class="field-edit" type="text" data-key="${key}" data-campo="${campo}" value="${val(valor)}">` : `<span style="font-size:9px;">${val(valor) || ''}</span>`;
 
       return `<tr>
         ${i === 0 ? `<td class="bloco-label" rowspan="${rowspan}">${rotulo}</td>` : ''}
@@ -543,20 +451,15 @@ function renderTabelaBloco(rotulo, bloco, lista, mm, editavel, comThead, colgrou
     }).join('');
   }
 
-  return `<table class="bloco">
-    ${colgroupHtml}
-    ${comThead ? theadHtml : ''}
-    <tbody>${corpo}</tbody>
-  </table>`;
+  return `<table class="bloco">${colgroupHtml}${comThead ? theadHtml : ''}<tbody>${corpo}</tbody></table>`;
 }
 
 function renderTabelaBlocoSubstituicao(deixou, assumiu, mm, editavel, colgroupHtml) {
   const totDeixou = totaisPorPeriodo(deixou || []);
   const totAssumiu = totaisPorPeriodo(assumiu || []);
-  const totalAulasDeixou = (deixou || []).reduce((s, r) => s + (r.lesson_count || 0), 0);
-  const totalAulasAssumiu = (assumiu || []).reduce((s, r) => s + (r.lesson_count || 0), 0);
+  const totalAulasDeixou = (deixou || []).reduce((s, r) => s + (Number(r.lesson_count) || 0), 0);
+  const totalAulasAssumiu = (assumiu || []).reduce((s, r) => s + (Number(r.lesson_count) || 0), 0);
 
-  // Regras aplicadas a cada sub-bloco
   const regraDeixou = aplicarRegraHEC(totalAulasDeixou);
   const regraAssumiu = aplicarRegraHEC(totalAulasAssumiu);
 
@@ -577,28 +480,19 @@ function renderTabelaBlocoSubstituicao(deixou, assumiu, mm, editavel, colgroupHt
 
   const linhas = [];
 
-  // Subtítulo: Deixou
   linhas.push(`<tr><td colspan="14" class="subtitulo">Deixou as seguintes Classes:</td></tr>`);
-
   if (escolasDeixou.length === 0) {
     linhas.push(`<tr><td colspan="14" style="text-align:center;color:#6b7280;font-size:9px;">—</td></tr>`);
   } else {
     escolasDeixou.forEach((escola, i) => {
       const turmas = gruposDeixou[escola];
       const primeira = i === 0;
-      const turmasLabel = turmas.map(t => {
-        const ab = abreviarDisciplina(t.discipline_name);
-        return ab ? `${t.class_name} (${ab})` : t.class_name;
-      }).join(', ');
+      const turmasLabel = turmas.map(t => { const ab = abreviarDisciplina(t.discipline_name); return ab ? `${t.class_name} (${ab})` : t.class_name; }).join(', ');
       const key = `${turmas[0].assignment_id}|deixou`;
       const m = mm[key] || { hec: '', ha: '', hll: '', total_sm: '' };
       const val = v => v === null || v === undefined || v === '' ? '' : v;
-
-      // Aplica regra na primeira linha do sub-bloco
-      let hecVal = m.hec;
-      let haVal = m.ha;
-      let hllVal = m.hll;
-      let totalSmVal = m.total_sm;
+      
+      let hecVal = m.hec, haVal = m.ha, hllVal = m.hll, totalSmVal = m.total_sm;
       if (primeira && regraDeixou) {
         if (isVazio(hecVal)) hecVal = regraDeixou.hec;
         if (isVazio(haVal)) haVal = regraDeixou.ha;
@@ -606,50 +500,35 @@ function renderTabelaBlocoSubstituicao(deixou, assumiu, mm, editavel, colgroupHt
         if (isVazio(totalSmVal)) totalSmVal = regraDeixou.total_sm;
       }
 
-      const inputEdit = (campo, valor) => editavel
-        ? `<input class="field-edit" type="text" data-key="${key}" data-campo="${campo}" value="${val(valor)}">`
-        : `<span style="font-size:9px;">${val(valor) || ''}</span>`;
+      const inputEdit = (campo, valor) => editavel ? `<input class="field-edit" type="text" data-key="${key}" data-campo="${campo}" value="${val(valor)}">` : `<span style="font-size:9px;">${val(valor) || ''}</span>`;
 
       linhas.push(`<tr>
-        <td>${esc(escola)}</td>
-        <td>${esc(turmasLabel)}</td>
+        <td>${esc(escola)}</td><td>${esc(turmasLabel)}</td>
         <td style="text-align:center;">${primeira ? (totDeixou.M || '') : ''}</td>
         <td style="text-align:center;">${primeira ? (totDeixou.T || '') : ''}</td>
         <td style="text-align:center;">${primeira ? (totDeixou.N || '') : ''}</td>
-        <td style="text-align:center;"></td>
-        <td style="text-align:center;"></td>
+        <td style="text-align:center;"></td><td style="text-align:center;"></td>
         <td style="text-align:center;">${primeira ? (totalAulasDeixou || '') : ''}</td>
-        <td>${inputEdit('hec', hecVal)}</td>
-        <td>${inputEdit('ha', haVal)}</td>
-        <td>${inputEdit('hll', hllVal)}</td>
-        <td>${inputEdit('total_sm', totalSmVal)}</td>
+        <td>${inputEdit('hec', hecVal)}</td><td>${inputEdit('ha', haVal)}</td>
+        <td>${inputEdit('hll', hllVal)}</td><td>${inputEdit('total_sm', totalSmVal)}</td>
         <td><div class="assinatura-por-linha"></div></td>
       </tr>`);
     });
   }
 
-  // Subtítulo: Assumiu
   linhas.push(`<tr><td colspan="14" class="subtitulo">Assumiu as seguintes Classes:</td></tr>`);
-
   if (escolasAssumiu.length === 0) {
     linhas.push(`<tr><td colspan="14" style="text-align:center;color:#6b7280;font-size:9px;">—</td></tr>`);
   } else {
     escolasAssumiu.forEach((escola, i) => {
       const turmas = gruposAssumiu[escola];
       const primeira = i === 0;
-      const turmasLabel = turmas.map(t => {
-        const ab = abreviarDisciplina(t.discipline_name);
-        return ab ? `${t.class_name} (${ab})` : t.class_name;
-      }).join(', ');
+      const turmasLabel = turmas.map(t => { const ab = abreviarDisciplina(t.discipline_name); return ab ? `${t.class_name} (${ab})` : t.class_name; }).join(', ');
       const key = `${turmas[0].assignment_id}|assumiu`;
       const m = mm[key] || { hec: '', ha: '', hll: '', total_sm: '' };
       const val = v => v === null || v === undefined || v === '' ? '' : v;
 
-      // Aplica regra na primeira linha do sub-bloco
-      let hecVal = m.hec;
-      let haVal = m.ha;
-      let hllVal = m.hll;
-      let totalSmVal = m.total_sm;
+      let hecVal = m.hec, haVal = m.ha, hllVal = m.hll, totalSmVal = m.total_sm;
       if (primeira && regraAssumiu) {
         if (isVazio(hecVal)) hecVal = regraAssumiu.hec;
         if (isVazio(haVal)) haVal = regraAssumiu.ha;
@@ -657,51 +536,24 @@ function renderTabelaBlocoSubstituicao(deixou, assumiu, mm, editavel, colgroupHt
         if (isVazio(totalSmVal)) totalSmVal = regraAssumiu.total_sm;
       }
 
-      const inputEdit = (campo, valor) => editavel
-        ? `<input class="field-edit" type="text" data-key="${key}" data-campo="${campo}" value="${val(valor)}">`
-        : `<span style="font-size:9px;">${val(valor) || ''}</span>`;
+      const inputEdit = (campo, valor) => editavel ? `<input class="field-edit" type="text" data-key="${key}" data-campo="${campo}" value="${val(valor)}">` : `<span style="font-size:9px;">${val(valor) || ''}</span>`;
 
       linhas.push(`<tr>
-        <td>${esc(escola)}</td>
-        <td>${esc(turmasLabel)}</td>
+        <td>${esc(escola)}</td><td>${esc(turmasLabel)}</td>
         <td style="text-align:center;">${primeira ? (totAssumiu.M || '') : ''}</td>
         <td style="text-align:center;">${primeira ? (totAssumiu.T || '') : ''}</td>
         <td style="text-align:center;">${primeira ? (totAssumiu.N || '') : ''}</td>
         <td style="text-align:center;"></td>
         <td style="text-align:center;">${primeira ? (totalAulasAssumiu || '') : ''}</td>
         <td style="text-align:center;">${primeira ? (totalAulasAssumiu || '') : ''}</td>
-        <td>${inputEdit('hec', hecVal)}</td>
-        <td>${inputEdit('ha', haVal)}</td>
-        <td>${inputEdit('hll', hllVal)}</td>
-        <td>${inputEdit('total_sm', totalSmVal)}</td>
+        <td>${inputEdit('hec', hecVal)}</td><td>${inputEdit('ha', haVal)}</td>
+        <td>${inputEdit('hll', hllVal)}</td><td>${inputEdit('total_sm', totalSmVal)}</td>
         <td><div class="assinatura-por-linha"></div></td>
       </tr>`);
     });
   }
 
-  return `<table class="bloco">
-    ${colgroupHtml}
-    <tbody>
-      <tr>
-        <td class="bloco-label" rowspan="${linhas.length}">III - Substituição</td>
-        <td colspan="13" style="padding:0;border:none;">
-          <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
-            <colgroup>
-              <col style="width:70px">
-              <col>
-              <col style="width:24px"><col style="width:24px"><col style="width:24px">
-              <col style="width:36px"><col style="width:36px">
-              <col style="width:44px">
-              <col style="width:36px"><col style="width:36px"><col style="width:36px">
-              <col style="width:56px">
-              <col style="width:70px">
-            </colgroup>
-            <tbody>${linhas.join('')}</tbody>
-          </table>
-        </td>
-      </tr>
-    </tbody>
-  </table>`;
+  return `<table class="bloco">${colgroupHtml}<tbody><tr><td class="bloco-label" rowspan="${linhas.length}">III - Substituição</td><td colspan="13" style="padding:0;border:none;"><table style="width:100%;border-collapse:collapse;table-layout:fixed;"><colgroup><col style="width:70px"><col><col style="width:24px"><col style="width:24px"><col style="width:24px"><col style="width:36px"><col style="width:36px"><col style="width:44px"><col style="width:36px"><col style="width:36px"><col style="width:36px"><col style="width:56px"><col style="width:70px"></colgroup><tbody>${linhas.join('')}</tbody></table></td></tr></tbody></table>`;
 }
 
 async function salvarDaca() {
@@ -726,13 +578,9 @@ async function salvarDaca() {
   };
 
   await supabaseClient.from('teacher_daca_data').upsert({
-    teacher_id: teacherAtualId,
-    peb: dadosProfSnap.prof_peb, classificacao: dadosProfSnap.prof_classificacao,
-    rg: dadosProfSnap.prof_rg, cpf: dadosProfSnap.prof_cpf,
-    jornada: dadosProfSnap.prof_jornada, categoria: dadosProfSnap.prof_categoria,
-    afastamento: dadosProfSnap.prof_afastamento,
-    carga_suplementar: dadosProfSnap.prof_carga_suplementar,
-    professor_excedente: dadosProfSnap.prof_professor_excedente,
+    teacher_id: teacherAtualId, peb: dadosProfSnap.prof_peb, classificacao: dadosProfSnap.prof_classificacao,
+    rg: dadosProfSnap.prof_rg, cpf: dadosProfSnap.prof_cpf, jornada: dadosProfSnap.prof_jornada, categoria: dadosProfSnap.prof_categoria,
+    afastamento: dadosProfSnap.prof_afastamento, carga_suplementar: dadosProfSnap.prof_carga_suplementar, professor_excedente: dadosProfSnap.prof_professor_excedente,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'teacher_id' });
 
@@ -768,12 +616,9 @@ async function salvarDaca() {
     return {
       daca_record_id: rec.id, assignment_id: r.assignment_id, bloco: a.bloco,
       school_name: nomeCurto(r.school_name, r.school_short_name), class_name: r.class_name,
-      class_period: r.class_period, discipline_name: r.discipline_name,
-      lesson_count: r.lesson_count,
-      hec: a.hec ? parseInt(a.hec, 10) : 0,
-      ha: a.ha ? parseInt(a.ha, 10) : 0,
-      hll: a.hll ? parseInt(a.hll, 10) : 0,
-      total_sm: a.total_sm || null,
+      class_period: r.class_period, discipline_name: r.discipline_name, lesson_count: r.lesson_count,
+      hec: a.hec ? parseInt(a.hec, 10) : 0, ha: a.ha ? parseInt(a.ha, 10) : 0,
+      hll: a.hll ? parseInt(a.hll, 10) : 0, total_sm: a.total_sm || null,
     };
   }).filter(Boolean);
 
@@ -785,10 +630,8 @@ async function salvarDaca() {
   if (Object.keys(agrupados).length > 0) {
     const regs = Object.values(agrupados).map(r => ({
       teacher_id: teacherAtualId, assignment_id: r.assignment_id, bloco: r.bloco,
-      hec: r.hec ? parseInt(r.hec, 10) : 0,
-      ha: r.ha ? parseInt(r.ha, 10) : 0,
-      hll: r.hll ? parseInt(r.hll, 10) : 0,
-      total_sm: r.total_sm || null,
+      hec: r.hec ? parseInt(r.hec, 10) : 0, ha: r.ha ? parseInt(r.ha, 10) : 0,
+      hll: r.hll ? parseInt(r.hll, 10) : 0, total_sm: r.total_sm || null,
       updated_at: new Date().toISOString(),
     }));
     await supabaseClient.from('daca_manual_fields').upsert(regs, { onConflict: 'teacher_id,assignment_id,bloco' });
