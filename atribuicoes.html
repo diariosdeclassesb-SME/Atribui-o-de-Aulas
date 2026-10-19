@@ -79,7 +79,7 @@
   /* Ajustes do Tom Select */
   .ts-wrapper { width: 100%; min-width: 200px; }
   .ts-control { min-height: 38px; padding: 8px 12px; font-size: 14px; border-radius: 6px; display: flex; align-items: center; }
-  .ts-dropdown { font-size: 14px; }
+  .ts-dropdown { font-size: 14px; width: 100%; min-width: 280px; }
   .ts-dropdown .option { padding: 8px 12px; }
 </style>
 </head>
@@ -248,14 +248,14 @@ function renderizar() {
     }
   } 
   // REGRA 2: Polivalente - PEB I puxa Literatura e Música
-  else if (disciplinaSelecionada?.name.includes('Polivalente')) {
+  else if (disciplinaSelecionada?.name === 'Polivalente - PEB I') {
     const lit = disciplinas.find(d => d.name.includes('Literatura'));
     const mus = disciplinas.find(d => d.name.includes('Música'));
     if (lit) discIds.push(lit.id);
     if (mus) discIds.push(mus.id);
     
     if (lit || mus) {
-      avisoTexto = 'Incluindo também as ofertas de <strong>Literatura</strong> e <strong>Música</strong>, pois professores de Polivalente assumem essas aulas.';
+      avisoTexto = 'Incluindo também as ofertas de <strong>Literatura</strong> e <strong>Música</strong>, pois professores de Polivalente - PEB I assumem essas aulas.';
     }
   }
 
