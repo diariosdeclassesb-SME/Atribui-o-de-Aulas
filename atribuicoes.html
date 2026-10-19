@@ -77,8 +77,10 @@
   .toast.show { opacity: 1; } .toast.error { background: var(--danger); }
 
   /* Ajustes do Tom Select */
-  .ts-wrapper { width: 100%; }
-  .ts-control { border-radius: 6px; padding: 8px 10px; font-size: 14px; }
+  .ts-wrapper { width: 100%; min-width: 200px; }
+  .ts-control { min-height: 38px; padding: 8px 12px; font-size: 14px; border-radius: 6px; display: flex; align-items: center; }
+  .ts-dropdown { font-size: 14px; }
+  .ts-dropdown .option { padding: 8px 12px; }
 </style>
 </head>
 <body>
@@ -164,8 +166,6 @@ function nomeCurto(nome, shortName) { if (shortName && shortName.trim()) return 
 
 let disciplinas = [], professores = [], ofertas = [], assignments = [], escolas = [];
 let teacherMap = {};
-
-// Armazena a última ação para o "Desfazer"
 let lastAction = null;
 
 async function carregarTudo() {
@@ -184,7 +184,6 @@ async function carregarTudo() {
   
   preencherDisciplinas(); preencherEscolas(); renderizar();
   
-  // Inicializa Tom Select para busca
   new TomSelect('#filtro-disciplina', { create: false, sortField: 'text' });
   new TomSelect('#filtro-escola', { create: false, sortField: 'text' });
 }
@@ -206,9 +205,7 @@ function atualizarProfessores() {
   const atual = $('filtro-professor').value;
   const filtrados = discId ? professores.filter(p => p.discipline_id === discId) : [];
   
-  if ($('filtro-professor').tomselect) {
-    $('filtro-professor').tomselect.destroy();
-  }
+  if ($('filtro-professor').tomselect) $('filtro-professor').tomselect.destroy();
   
   $('filtro-professor').innerHTML = discId 
     ? (filtrados.length ? '<option value="">Selecione...</option>' + filtrados.map(p => `<option value="${p.id}">${esc(p.full_name)}</option>`).join('') : '<option value="">Nenhum professor nessa disciplina</option>') 
@@ -312,28 +309,20 @@ function renderizarResumo(profId) {
   $('resumo-escolas').textContent = new Set(ofertasDoProf.map(o => o.classes?.school_id).filter(Boolean)).size;
 }
 
-// ----------------------------------------------------
-// AÇÕES (Atribuir, Deixar, Assumir) com histórico para Desfazer
-// ----------------------------------------------------
 function mostrarBotaoDesfazer() {
   $('btn-undo').style.display = 'block';
-  setTimeout(() => { $('btn-undo').style.display = 'none'; lastAction = null; }, 15000); // Desaparece após 15s
+  setTimeout(() => { $('btn-undo').style.display = 'none'; lastAction = null; }, 15000);
 }
 
 async function atribuir(classDisciplineId) {
   const profId = $('filtro-professor').value; const fase = $('filtro-fase').value;
   if (!profId) return toast('Selecione um professor primeiro', true);
-  
   showLoading();
   const { data, error } = await supabaseClient.from('assignments').insert({ class_discipline_id: classDisciplineId, teacher_id: profId, assignment_type: fase, status: 'Ativo' }).select().single();
   hideLoading();
-  
   if (error) return toast(error.message, true);
-  
-  // Salva ação para desfazer
   lastAction = { type: 'insert', id: data.id };
   mostrarBotaoDesfazer();
-  
   toast('Turma atribuída'); await recarregarAssignments();
 }
 
@@ -341,58 +330,42 @@ async function deixar(assignmentId) {
   const profId = $('filtro-professor').value; const atual = assignments.find(a => a.id === assignmentId);
   if (profId && atual && atual.teacher_id !== profId) { if (!confirm('Esta turma pertence a outro professor. Confirmar que ele(a) deixou a turma?')) return; } 
   else { if (!confirm('Confirmar que o professor deixou esta turma?')) return; }
-  
   showLoading();
   const { error } = await supabaseClient.from('assignments').update({ status: 'Deixou a turma' }).eq('id', assignmentId);
   hideLoading();
-  
   if (error) return toast(error.message, true);
-  
-  // Salva ação para desfazer
   lastAction = { type: 'update', id: assignmentId, prevStatus: 'Ativo' };
   mostrarBotaoDesfazer();
-  
   toast('Registrado: professor deixou a turma'); await recarregarAssignments();
 }
 
 async function assumirSubstituto(classDisciplineId, assignmentAnteriorId) {
   const profId = $('filtro-professor').value;
   if (!profId) return toast('Selecione um professor primeiro', true);
-  
   showLoading();
   const { error: e1 } = await supabaseClient.from('assignments').update({ status: 'Substituído', substituted_by_teacher_id: profId }).eq('id', assignmentAnteriorId);
   if (e1) { hideLoading(); return toast(e1.message, true); }
-  
   const { data, error: e2 } = await supabaseClient.from('assignments').insert({ class_discipline_id: classDisciplineId, teacher_id: profId, assignment_type: 'Substituição', status: 'Ativo' }).select().single();
   hideLoading();
-  
   if (e2) return toast(e2.message, true);
-  
-  // Salva ação para desfazer
   lastAction = { type: 'subst', newId: data.id, oldId: assignmentAnteriorId, prevStatus: 'Ativo' };
   mostrarBotaoDesfazer();
-  
   toast('Substituição registrada'); await recarregarAssignments();
 }
 
 async function desfazerAcao() {
   if (!lastAction) return;
   showLoading();
-  
   if (lastAction.type === 'insert') {
     await supabaseClient.from('assignments').delete().eq('id', lastAction.id);
-  } 
-  else if (lastAction.type === 'update') {
+  } else if (lastAction.type === 'update') {
     await supabaseClient.from('assignments').update({ status: lastAction.prevStatus }).eq('id', lastAction.id);
-  } 
-  else if (lastAction.type === 'subst') {
+  } else if (lastAction.type === 'subst') {
     await supabaseClient.from('assignments').delete().eq('id', lastAction.newId);
     await supabaseClient.from('assignments').update({ status: lastAction.prevStatus, substituted_by_teacher_id: null }).eq('id', lastAction.oldId);
   }
-  
   hideLoading();
-  lastAction = null;
-  $('btn-undo').style.display = 'none';
+  lastAction = null; $('btn-undo').style.display = 'none';
   toast('Ação desfeita com sucesso!');
   await recarregarAssignments();
 }
@@ -405,7 +378,6 @@ async function recarregarAssignments() {
   assignments = data || []; renderizar();
 }
 
-// Eventos
 $('filtro-disciplina').addEventListener('change', () => { atualizarProfessores(); renderizar(); });
 $('filtro-professor').addEventListener('change', renderizar);
 $('filtro-fase').addEventListener('change', renderizar);

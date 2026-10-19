@@ -94,8 +94,10 @@
   .spinner { width: 50px; height: 50px; border: 5px solid #e5e7eb; border-top: 5px solid #2563eb; border-radius: 50%; animation: spin 1s linear infinite; }
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-  .ts-wrapper { width: 100%; }
-  .ts-control { border-radius: 4px; padding: 6px 8px; font-size: 13px; }
+  .ts-wrapper { width: 100%; min-width: 280px; }
+  .ts-control { min-height: 38px; padding: 8px 12px; font-size: 14px; border-radius: 6px; display: flex; align-items: center; }
+  .ts-dropdown { font-size: 14px; }
+  .ts-dropdown .option { padding: 8px 12px; }
 </style>
 </head>
 <body>
@@ -137,7 +139,7 @@
 
 <div class="view" id="view-consultar">
   <div class="toolbar no-print">
-    <div><label>Professor:</label><select id="filtro-prof" style="min-width:240px;"><option value="">Todos</option></select></div>
+    <div><label>Professor:</label><select id="filtro-prof" style="min-width:280px;"><option value="">Todos</option></select></div>
     <div><label>Data:</label><input type="date" id="filtro-data" /></div>
     <button class="btn btn-primary" onclick="carregarDacas()">Filtrar</button>
     <button class="btn btn-secondary" onclick="limparFiltrosConsulta()">Limpar</button>
