@@ -131,7 +131,7 @@
 
   <div class="card">
     <h2>Turmas da disciplina</h2>
-    <div id="aviso-rel" class="aviso-rel" style="display:none;">Incluindo também as ofertas de <strong>Religiosidade</strong>, pois professores de História assumem essas aulas.</div>
+    <div id="aviso-rel" class="aviso-rel" style="display:none;"></div>
     <div id="blocos-escolas"><div class="empty-bloco">Selecione uma disciplina para ver as turmas.</div></div>
   </div>
 </div>
@@ -237,9 +237,34 @@ function renderizar() {
 
   const disciplinaSelecionada = disciplinas.find(d => d.id === discId);
   const discIds = discId ? [discId] : [];
-  let incluindoRel = false;
-  if (disciplinaSelecionada?.name === 'História') { const rel = disciplinas.find(d => d.name === 'Religiosidade'); if (rel) { discIds.push(rel.id); incluindoRel = true; } }
-  $('aviso-rel').style.display = incluindoRel ? 'block' : 'none';
+  let avisoTexto = '';
+
+  // REGRA 1: História puxa Religiosidade
+  if (disciplinaSelecionada?.name === 'História') {
+    const rel = disciplinas.find(d => d.name === 'Religiosidade');
+    if (rel) { 
+      discIds.push(rel.id); 
+      avisoTexto = 'Incluindo também as ofertas de <strong>Religiosidade</strong>, pois professores de História assumem essas aulas.'; 
+    }
+  } 
+  // REGRA 2: Polivalente - PEB I puxa Literatura e Música
+  else if (disciplinaSelecionada?.name.includes('Polivalente')) {
+    const lit = disciplinas.find(d => d.name.includes('Literatura'));
+    const mus = disciplinas.find(d => d.name.includes('Música'));
+    if (lit) discIds.push(lit.id);
+    if (mus) discIds.push(mus.id);
+    
+    if (lit || mus) {
+      avisoTexto = 'Incluindo também as ofertas de <strong>Literatura</strong> e <strong>Música</strong>, pois professores de Polivalente assumem essas aulas.';
+    }
+  }
+
+  if (avisoTexto) {
+    $('aviso-rel').innerHTML = avisoTexto;
+    $('aviso-rel').style.display = 'block';
+  } else {
+    $('aviso-rel').style.display = 'none';
+  }
 
   if (!discId) { $('blocos-escolas').innerHTML = '<div class="empty-bloco">Selecione uma disciplina para ver as turmas.</div>'; return; }
 
