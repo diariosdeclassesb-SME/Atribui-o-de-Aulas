@@ -6,6 +6,9 @@
 <title>Relatório Geral — Sistema de Atribuição de Aulas</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 <style>
   :root { --primary: #2563eb; --primary-dark: #1e40af; --bg: #f3f4f6; --card: #fff; --border: #e5e7eb; --text: #111827; --muted: #6b7280; --green: #059669; --red: #dc2626; --orange: #d97706; }
   * { box-sizing: border-box; }
@@ -22,6 +25,7 @@
   .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
   .btn-primary { background: var(--primary); color: white; } .btn-primary:hover { background: var(--primary-dark); }
   .btn-secondary { background: #e5e7eb; color: #111; }
+  .btn-excel { background: #217346; color: white; } .btn-excel:hover { background: #1a5c38; }
 
   .rel-header { text-align: center; margin-bottom: 20px; }
   .rel-header h2 { margin: 0 0 4px; font-size: 18px; }
@@ -68,15 +72,13 @@
 
   .secao-titulo { font-size: 15px; font-weight: 700; margin: 24px 0 12px; color: #111; }
 
-  .faltantes-escola { margin-bottom: 14px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .faltantes-escola-header { background: #fef2f2; padding: 10px 14px; font-weight: 700; font-size: 13px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .faltantes-escola, .escola-sede-bloco { margin-bottom: 14px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .faltantes-escola-header, .escola-sede-header { padding: 10px 14px; font-weight: 700; font-size: 13px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .faltantes-escola-header { background: #fef2f2; }
+  .escola-sede-header { background: #eff6ff; color: #1e3a8a; }
   .faltantes-escola-header .qtd { font-weight: 500; font-size: 12px; color: var(--red); }
-  .faltantes-escola-body table { font-size: 13px; }
-
-  .escola-sede-bloco { margin-bottom: 14px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .escola-sede-header { background: #eff6ff; padding: 10px 14px; font-weight: 700; font-size: 13px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; color: #1e3a8a; }
   .escola-sede-header .qtd { font-weight: 500; font-size: 12px; color: #1e40af; }
-  .escola-sede-body table { font-size: 13px; }
+  .faltantes-escola-body table, .escola-sede-body table { font-size: 13px; }
 
   @media print {
     @page { size: A4 landscape; margin: 10mm; }
@@ -92,9 +94,18 @@
   }
   .toast { position: fixed; bottom: 20px; right: 20px; background: #111827; color: white; padding: 12px 20px; border-radius: 6px; font-size: 14px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 9999; }
   .toast.show { opacity: 1; }
+  
+  .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.7); z-index: 9999; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+  .spinner { width: 50px; height: 50px; border: 5px solid #e5e7eb; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+  .ts-wrapper { width: 100%; }
+  .ts-control { border-radius: 6px; padding: 8px 10px; font-size: 14px; }
 </style>
 </head>
 <body>
+
+<div class="loading-overlay" id="loading"><div class="spinner"></div></div>
 
 <header>
   <h1>Sistema de Atribuição de Aulas</h1>
@@ -121,18 +132,19 @@
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <button class="btn btn-primary" onclick="carregarRelatorio()">Filtrar</button>
         <button class="btn btn-secondary" onclick="limparFiltros()">Limpar</button>
+        <button class="btn btn-excel" onclick="exportarExcel()">⬇ Exportar Excel</button>
         <button class="btn btn-secondary" onclick="window.print()">Imprimir</button>
       </div>
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="relatorio-para-print">
     <div class="rel-header">
       <h2>Prefeitura Municipal de Santa Branca</h2>
       <p>Relatório Geral de Atribuições de Aulas — <span id="data-rel"></span></p>
     </div>
 
-    <div class="bloco-totais">
+    <div class="bloco-totais" id="tabela-totais">
       <div class="totais-card">
         <h3>Professores</h3>
         <div class="linha"><span class="label">Cadastrados</span><span class="valor neutro" id="t-prof-total">0</span></div>
@@ -164,11 +176,11 @@
       <div class="grafico-card"><h3>Turmas atribuídas × não atribuídas</h3><canvas id="chart-turmas"></canvas></div>
       <div class="grafico-card"><h3>Professores que atribuíram × não atribuíram</h3><canvas id="chart-professores"></canvas></div>
       <div class="grafico-card"><h3>Top 10 professores por aulas atribuídas</h3><canvas id="chart-top-prof"></canvas></div>
-      <div class="grafico-card"><h3>Turmas atribuídas por escola</h3><canvas id="chart-por-escola"></canvas></div>
+      <div class="grafico-card"><h3>Aulas distribuídas por escola</h3><canvas id="chart-por-escola"></canvas></div>
     </div>
 
     <div class="secao-titulo">Professores</div>
-    <table>
+    <table id="tabela-professores">
       <thead><tr><th style="width:30px"></th><th>Professor</th><th>Disciplina</th><th>Escola Sede</th><th>Situação</th><th class="center">Turmas</th><th class="center">Aulas</th><th class="center">Escolas</th></tr></thead>
       <tbody id="lista-rel"><tr><td colspan="8" class="empty">Carregando...</td></tr></tbody>
     </table>
@@ -191,6 +203,9 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 const $ = (id) => document.getElementById(id);
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.className = 'toast show'; setTimeout(() => t.className = 'toast', 2500); }
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function showLoading() { $('loading').style.display = 'flex'; }
+function hideLoading() { $('loading').style.display = 'none'; }
+
 async function requireLogin() { const { data: { session } } = await supabaseClient.auth.getSession(); if (!session) { window.location.href = 'index.html'; return null; } return session; }
 async function logout() { await supabaseClient.auth.signOut(); window.location.href = 'index.html'; }
 
@@ -205,6 +220,7 @@ const charts = {};
 let turmasPorProfessor = {};
 
 async function carregarDados() {
+  showLoading();
   const [p, e, d, o, a] = await Promise.all([
     supabaseClient.from('teachers').select('id, full_name, discipline_id, disciplines(name)').order('full_name'),
     supabaseClient.from('schools').select('*').order('name'),
@@ -212,9 +228,14 @@ async function carregarDados() {
     supabaseClient.from('class_disciplines').select('id, lesson_count, class_id, discipline_id, classes(id, name, period, school_id, schools(id, name, short_name)), disciplines(name)'),
     supabaseClient.from('assignments').select('*'),
   ]);
+  hideLoading();
+  
   cache.professores = p.data || []; cache.escolas = e.data || []; cache.disciplinas = d.data || []; cache.ofertas = o.data || []; cache.assignments = a.data || [];
   $('f-escola').innerHTML = '<option value="">Todas</option>' + cache.escolas.map(e => `<option value="${e.id}">${esc(nomeCurto(e.name, e.short_name))}</option>`).join('');
   $('f-disciplina').innerHTML = '<option value="">Todas</option>' + cache.disciplinas.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('');
+  
+  new TomSelect('#f-escola', { create: false, sortField: 'text' });
+  new TomSelect('#f-disciplina', { create: false, sortField: 'text' });
 }
 
 function estadoOferta(classDisciplineId) {
@@ -226,6 +247,7 @@ function estadoOferta(classDisciplineId) {
 }
 
 function carregarRelatorio() {
+  showLoading();
   const escolaId = $('f-escola').value || null;
   const periodo = $('f-periodo').value || null;
   const discId = $('f-disciplina').value || null;
@@ -268,7 +290,9 @@ function carregarRelatorio() {
   renderEscolaSede(professores);
   renderTurmasFaltantes(ofertasEstado);
   renderGraficos({ turmasAtrib, turmasFalta, profsAtribuidos, profsSemAtribuir, professores, ofertasEstado });
+  
   $('data-rel').textContent = new Date().toLocaleDateString('pt-BR');
+  hideLoading();
 }
 
 function calcularPorProfessor(professores, ofertasEstado) {
@@ -375,24 +399,14 @@ function renderGraficos(dados) {
   const { turmasAtrib, turmasFalta, profsAtribuidos, profsSemAtribuir, professores, ofertasEstado } = dados;
   Object.values(charts).forEach(c => c.destroy());
 
-  charts.turmas = new Chart($('chart-turmas'), {
-    type: 'doughnut', data: { labels: ['Atribuídas', 'Não atribuídas'], datasets: [{ data: [turmasAtrib, turmasFalta], backgroundColor: ['#10b981', '#ef4444'], borderWidth: 2, borderColor: '#fff' }] },
-    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' } } }
-  });
-
-  charts.professores = new Chart($('chart-professores'), {
-    type: 'doughnut', data: { labels: ['Atribuíram', 'Não atribuíram'], datasets: [{ data: [profsAtribuidos, profsSemAtribuir], backgroundColor: ['#3b82f6', '#f59e0b'], borderWidth: 2, borderColor: '#fff' }] },
-    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' } } }
-  });
+  charts.turmas = new Chart($('chart-turmas'), { type: 'doughnut', data: { labels: ['Atribuídas', 'Não atribuídas'], datasets: [{ data: [turmasAtrib, turmasFalta], backgroundColor: ['#10b981', '#ef4444'], borderWidth: 2, borderColor: '#fff' }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' } } } });
+  charts.professores = new Chart($('chart-professores'), { type: 'doughnut', data: { labels: ['Atribuíram', 'Não atribuíram'], datasets: [{ data: [profsAtribuidos, profsSemAtribuir], backgroundColor: ['#3b82f6', '#f59e0b'], borderWidth: 2, borderColor: '#fff' }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' } } } });
 
   const ranking = professores.map(p => { const info = turmasPorProfessor[p.id]; return { nome: p.full_name, aulas: info ? info.aulas : 0 }; }).filter(r => r.aulas > 0).sort((a, b) => b.aulas - a.aulas).slice(0, 10);
-  charts.topProf = new Chart($('chart-top-prof'), {
-    type: 'bar', data: { labels: ranking.map(r => r.nome.length > 22 ? r.nome.slice(0, 20) + '…' : r.nome), datasets: [{ label: 'Aulas', data: ranking.map(r => r.aulas), backgroundColor: '#2563eb', borderRadius: 4 }] },
-    options: { responsive: true, maintainAspectRatio: true, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
-  });
+  charts.topProf = new Chart($('chart-top-prof'), { type: 'bar', data: { labels: ranking.map(r => r.nome.length > 22 ? r.nome.slice(0, 20) + '…' : r.nome), datasets: [{ label: 'Aulas', data: ranking.map(r => r.aulas), backgroundColor: '#2563eb', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: true, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } } });
 
   const porEscola = {};
-  ofertasEstado.forEach(o => { if (o.estado.status !== 'Atribuída') return; const sid = o.classes?.school_id; if (!sid) return; porEscola[sid] = (porEscola[sid] || 0) + 1; });
+  ofertasEstado.forEach(o => { if (o.estado.status !== 'Atribuída') return; const sid = o.classes?.school_id; if (!sid) return; porEscola[sid] = (porEscola[sid] || 0) + (o.lesson_count || 0); });
   const labelsEscola = []; const dadosEscola = [];
   Object.keys(porEscola).sort((a, b) => {
     const ea = cache.escolas.find(e => e.id === a); const eb = cache.escolas.find(e => e.id === b);
@@ -401,14 +415,66 @@ function renderGraficos(dados) {
     const e = cache.escolas.find(x => x.id === sid);
     labelsEscola.push(nomeCurto(e?.name, e?.short_name)); dadosEscola.push(porEscola[sid]);
   });
-  charts.porEscola = new Chart($('chart-por-escola'), {
-    type: 'bar', data: { labels: labelsEscola, datasets: [{ label: 'Turmas atribuídas', data: dadosEscola, backgroundColor: '#10b981', borderRadius: 4 }] },
-    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-  });
+  
+  charts.porEscola = new Chart($('chart-por-escola'), { type: 'bar', data: { labels: labelsEscola, datasets: [{ label: 'Aulas Atribuídas', data: dadosEscola, backgroundColor: '#8b5cf6', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
+}
+
+function exportarExcel() {
+  showLoading();
+  try {
+    const wb = XLSX.utils.book_new();
+    
+    // Aba 1: Professores
+    const tabelaProf = document.getElementById('tabela-professores');
+    const wsProf = XLSX.utils.table_to_sheet(tabelaProf);
+    XLSX.utils.book_append_sheet(wb, wsProf, "Professores");
+
+    // Aba 2: Escola Sede
+    const divSede = document.getElementById('lista-escola-sede');
+    const tabelasSede = divSede.querySelectorAll('table');
+    if (tabelasSede.length > 0) {
+      let combined = [["Escola Sede", "Professor", "Disciplina", "Turmas", "Aulas", "Escolas"]];
+      tabelasSede.forEach(table => {
+        const escolaNome = table.parentElement.parentElement.querySelector('.escola-sede-header span').innerText;
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach(tr => {
+          const cells = tr.querySelectorAll('td');
+          combined.push([escolaNome, cells[0].innerText, cells[1].innerText, cells[2].innerText, cells[3].innerText, cells[4].innerText]);
+        });
+      });
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(combined), "Escola Sede");
+    }
+
+    // Aba 3: Faltantes
+    const divFaltantes = document.getElementById('lista-faltantes');
+    const tabelasFaltantes = divFaltantes.querySelectorAll('table');
+    if (tabelasFaltantes.length > 0) {
+      let combined = [["Escola", "Turma", "Período", "Disciplina", "Aulas"]];
+      tabelasFaltantes.forEach(table => {
+        const escolaNome = table.parentElement.parentElement.querySelector('.faltantes-escola-header span').innerText;
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach(tr => {
+          const cells = tr.querySelectorAll('td');
+          combined.push([escolaNome, cells[0].innerText, cells[1].innerText, cells[2].innerText, cells[3].innerText]);
+        });
+      });
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(combined), "Faltantes");
+    }
+
+    XLSX.writeFile(wb, `Relatorio_${new Date().toISOString().slice(0,10)}.xlsx`);
+    toast('Excel gerado com sucesso!');
+  } catch (e) {
+    console.error(e);
+    toast('Erro ao gerar Excel');
+  } finally {
+    hideLoading();
+  }
 }
 
 function limparFiltros() {
-  $('f-escola').value = ''; $('f-periodo').value = ''; $('f-disciplina').value = ''; $('f-professor').value = '';
+  $('f-escola').tomselect.clear();
+  $('f-disciplina').tomselect.clear();
+  $('f-periodo').value = ''; $('f-professor').value = '';
   carregarRelatorio();
 }
 
