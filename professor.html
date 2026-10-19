@@ -51,7 +51,9 @@
 
   table.bloco { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 9px; table-layout: fixed; }
   table.bloco th, table.bloco td { border: 1px solid #000; padding: 1px 3px; vertical-align: middle; }
-  table.bloco th { background: #f3f4f6; font-weight: 700; text-align: center; font-size: 8px; line-height: 1.15; word-break: break-word; }
+  
+  /* CORREÇÃO DO CABEÇALHO: Retirado o break-word e ajustado o tamanho da fonte */
+  table.bloco th { background: #f3f4f6; font-weight: 700; text-align: center; font-size: 8px; line-height: 1.15; word-break: normal; overflow-wrap: normal; }
 
   td.bloco-label { writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; font-weight: 700; font-size: 8.5px; padding: 4px 0 !important; width: 28px; white-space: nowrap; vertical-align: middle; background: #fafafa; letter-spacing: .3px; }
   td.subtitulo { background: #f3f4f6; text-align: center; font-weight: 700; font-size: 9px; padding: 3px; }
@@ -312,7 +314,6 @@ function renderDocumento(ctx) {
   const globalLivre = totalTitular + totalCarga;
   const globalSubs = totalAssumiu;
 
-  // Cálculo automático da Jornada (Item 9)
   let jornadaAuto = '';
   let keyBase = null;
 
@@ -350,9 +351,9 @@ function renderDocumento(ctx) {
       <col> <!-- Classes -->
       <col style="width:24px"><col style="width:24px"><col style="width:24px"> <!-- M T N -->
       <col style="width:36px"><col style="width:36px"> <!-- Livre Subs -->
-      <col style="width:44px"> <!-- Nº Aulas Semanais -->
+      <col style="width:50px"> <!-- Nº Aulas Semanais (Aumentado) -->
       <col style="width:36px"><col style="width:36px"><col style="width:36px"> <!-- HEC HA HLLE -->
-      <col style="width:65px"> <!-- Total SM -->
+      <col style="width:75px"> <!-- Total SM (Aumentado) -->
       <col style="width:80px"> <!-- Assinatura -->
     </colgroup>`;
 
@@ -368,13 +369,12 @@ function renderDocumento(ctx) {
         <th rowspan="2">H.E.C</th>
         <th rowspan="2">H.A</th>
         <th rowspan="2">H.L.L.E</th>
-        <th rowspan="2">Total de Aulas<br>Semanal/Mensal</th>
+        <th rowspan="2">Total de Aulas<br>Semanal / Mensal</th>
         <th rowspan="2">Assinatura</th>
       </tr>
       <tr><th>M</th><th>T</th><th>N</th><th>Livre</th><th>Subs.</th></tr>
     </thead>`;
 
-  // Lógica para exibir o total apenas no primeiro bloco que tiver dados
   let isFirst = true;
   
   let htmlTitular = '';
@@ -646,7 +646,7 @@ function renderLinhasBlocoSubstituicao(deixou, assumiu, mm, editavel, globalTota
 }
 
 // ============================================================
-// EXPORTAR PDF (Corrigido para não ficar em branco)
+// EXPORTAR PDF (Corrigido para não cortar a esquerda)
 // ============================================================
 async function exportarPDF() {
   const original = document.querySelector('.doc');
@@ -655,33 +655,26 @@ async function exportarPDF() {
   }
   if (document.activeElement) document.activeElement.blur();
 
-  // Clona o documento para não estragar a tela e ajusta o tamanho fixo
-  const clone = original.cloneNode(true);
-  clone.style.width = '1100px'; 
-  clone.style.minHeight = 'auto';
-  clone.style.padding = '10mm';
-  clone.style.background = '#fff';
+  // Salva estilos originais
+  const origShadow = original.style.boxShadow;
+  const origMargin = original.style.margin;
   
-  // Truque para o html2canvas não bugar a altura da tabela
-  const tabela = clone.querySelector('table.bloco');
-  if (tabela) tabela.style.height = 'auto';
-
-  // Cria um container invisível (mas renderizável) para o html2canvas capturar
-  const overlay = document.createElement('div');
-  overlay.style.position = 'fixed';
-  overlay.style.top = '0';
-  overlay.style.left = '0';
-  overlay.style.zIndex = '-9999';
-  overlay.style.opacity = '0.01'; // O html2canvas precisa que não seja 0
-  
-  overlay.appendChild(clone);
-  document.body.appendChild(overlay);
+  // Ajusta temporariamente o elemento real para o PDF
+  original.style.boxShadow = 'none';
+  original.style.margin = '0';
+  original.style.width = '1100px'; // Garante que o html2canvas calcule a largura total
 
   const opt = {
     margin: 5,
     filename: `DACA_${new Date().toISOString().slice(0,10)}.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 1100 },
+    html2canvas: { 
+      scale: 2, 
+      useCORS: true, 
+      scrollY: 0, 
+      scrollX: 0,
+      windowWidth: 1200 // Força uma janela virtual maior que o documento para não cortar a esquerda
+    },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
     pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' }
   };
@@ -689,14 +682,15 @@ async function exportarPDF() {
   toast('Gerando PDF...', 'success');
   
   try {
-    await new Promise(r => setTimeout(r, 300)); // Aguarda renderização
-    await html2pdf().set(opt).from(clone).save();
+    await html2pdf().set(opt).from(original).save();
     toast('PDF gerado com sucesso!', 'success');
   } catch (error) {
     console.error(error);
     toast('Erro ao gerar PDF', 'error');
   } finally {
-    document.body.removeChild(overlay);
+    // Restaura os estilos originais
+    original.style.boxShadow = origShadow;
+    original.style.margin = origMargin;
   }
 }
 
