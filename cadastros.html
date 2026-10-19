@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Cadastros — Sistema de Atribuição de Aulas</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 <style>
   :root {
     --primary: #2563eb; --primary-dark: #1e40af; --danger: #dc2626;
@@ -25,22 +27,28 @@
   .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: end; }
   label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
   input, select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white; }
-  button.btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
+  button.btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; white-space: nowrap; }
   .btn-primary { background: var(--primary); color: white; } .btn-primary:hover { background: var(--primary-dark); }
   .btn-danger { background: var(--danger); color: white; padding: 4px 10px; font-size: 12px; }
   .btn-edit { background: #6b7280; color: white; padding: 4px 10px; font-size: 12px; margin-right: 4px; }
+  .btn-dup { background: #059669; color: white; padding: 4px 10px; font-size: 12px; margin-right: 4px; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
   th { background: #f9fafb; font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; }
   tr:last-child td { border-bottom: none; }
   .empty { color: var(--muted); font-size: 14px; padding: 20px; text-align: center; }
-  .toast { position: fixed; bottom: 20px; right: 20px; background: #111827; color: white; padding: 12px 20px; border-radius: 6px; font-size: 14px; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  .toast { position: fixed; bottom: 20px; right: 20px; background: #111827; color: white; padding: 12px 20px; border-radius: 6px; font-size: 14px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 10000; }
   .toast.show { opacity: 1; } .toast.error { background: var(--danger); }
-  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 9999; }
   .modal-bg.show { display: flex; }
   .modal { background: white; border-radius: 8px; padding: 20px; min-width: 420px; max-width: 90vw; }
   .modal h3 { margin: 0 0 16px; font-size: 16px; }
   .modal .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  
+  /* Tom Select */
+  .ts-wrapper { width: 100%; }
+  .ts-control { padding: 8px 10px; font-size: 14px; border-radius: 6px; }
+  .ts-dropdown { font-size: 14px; }
 </style>
 </head>
 <body>
@@ -62,7 +70,7 @@
     <button data-tab="escolas" class="active">Escolas</button>
     <button data-tab="disciplinas">Disciplinas</button>
     <button data-tab="turmas">Turmas</button>
-    <button data-tab="ofertas">Ofertas</button>
+    <button data-tab="ofertas">Ofertas (Melhorado)</button>
     <button data-tab="professores">Professores</button>
   </div>
 
@@ -70,7 +78,7 @@
     <div class="card">
       <div class="form-row">
         <div><label>Nome da escola</label><input id="escola-nome" placeholder='Ex: E.M.E.F. "Barão de Santa Branca"' /></div>
-        <div><label>Nome curto (usado no DACA)</label><input id="escola-short" placeholder="Ex: Barão" /></div>
+        <div><label>Nome curto (DACA)</label><input id="escola-short" placeholder="Ex: Barão" /></div>
         <button class="btn btn-primary" onclick="addEscola()">Adicionar</button>
       </div>
     </div>
@@ -109,13 +117,30 @@
     <div class="card">
       <div class="form-row">
         <div><label>Turma</label><select id="oferta-turma"></select></div>
-        <div><label>Disciplina</label><select id="oferta-disciplina"></select></div>
+        <div>
+          <label>Disciplinas (Selecione uma ou várias)</label>
+          <select id="oferta-disciplina" multiple></select>
+        </div>
         <div><label>Aulas semanais</label><input id="oferta-aulas" type="number" min="1" value="1" /></div>
         <button class="btn btn-primary" onclick="addOferta()">Adicionar</button>
       </div>
     </div>
     <div class="card">
-      <table><thead><tr><th>Escola</th><th>Turma</th><th>Disciplina</th><th>Aulas</th><th style="width:80px">Ações</th></tr></thead><tbody id="lista-ofertas"></tbody></table>
+      <div style="margin-bottom: 12px; display: flex; gap: 10px;">
+        <input type="text" id="filtro-tabela" placeholder="🔍 Buscar por escola, turma ou disciplina..." onkeyup="renderOfertas()" style="flex: 1; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;" />
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Escola</th>
+            <th>Turma</th>
+            <th>Disciplina</th>
+            <th style="width: 100px;">Aulas</th>
+            <th style="width:180px">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="lista-ofertas"></tbody>
+      </table>
     </div>
   </section>
 
@@ -171,6 +196,29 @@
   </div>
 </div>
 
+<!-- Modal Duplicar Ofertas -->
+<div class="modal-bg" id="modal-duplicar">
+  <div class="modal">
+    <h3>Duplicar Ofertas da Turma</h3>
+    <p style="font-size: 13px; color: #6b7280; margin-top:0;">Todas as disciplinas e aulas da turma de origem serão copiadas para a turma de destino.</p>
+    <input type="hidden" id="dup-origem-id" />
+    <div style="display:grid;gap:10px;">
+      <div>
+        <label>Turma de Origem</label>
+        <input id="dup-origem-nome" readonly style="background:#f3f4f6; font-weight:bold;" />
+      </div>
+      <div>
+        <label>Copiar para a Turma (Destino)</label>
+        <select id="dup-destino-id"></select>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn" style="background:#e5e7eb" onclick="fecharModalDuplicar()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarDuplicar()">Copiar Ofertas</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -214,7 +262,7 @@ async function carregarTudo() {
     supabaseClient.from('schools').select('*').order('name'),
     supabaseClient.from('disciplines').select('*').order('name'),
     supabaseClient.from('classes').select('*, schools(name)').order('name'),
-    supabaseClient.from('class_disciplines').select('*, classes(name, period, schools(name)), disciplines(name)'),
+    supabaseClient.from('class_disciplines').select('*, classes(id, name, period, schools(name)), disciplines(name)'),
     supabaseClient.from('teachers').select('*, disciplines(name)').order('full_name'),
   ]);
   if (e.error) return toast('Erro escolas: ' + e.error.message, true);
@@ -225,15 +273,27 @@ async function carregarTudo() {
 
   escolas = e.data || []; disciplinas = d.data || []; turmas = t.data || [];
   ofertas = o.data || []; professores = p.data || [];
+  
   renderEscolas(); renderDisciplinas(); renderTurmas();
   renderOfertas(); renderProfessores(); preencherSelects();
 }
 
 function preencherSelects() {
   $('turma-escola').innerHTML = escolas.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
+  
   $('oferta-turma').innerHTML = turmas.map(t => `<option value="${t.id}">${esc(t.schools?.name)} — ${esc(t.name)} (${esc(t.period)})</option>`).join('');
+  
   const optDisc = disciplinas.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('');
+  
+  // Inicializa o TomSelect para multi-seleção de disciplinas
+  if ($('oferta-disciplina').tomselect) $('oferta-disciplina').tomselect.destroy();
   $('oferta-disciplina').innerHTML = optDisc;
+  new TomSelect('#oferta-disciplina', {
+    plugins: ['remove_button'],
+    maxItems: null,
+    placeholder: "Selecione as disciplinas..."
+  });
+
   $('prof-disciplina').innerHTML = optDisc;
   $('edit-prof-disciplina').innerHTML = optDisc;
 }
@@ -260,11 +320,32 @@ function renderTurmas() {
     ? turmas.map(t => `<tr><td>${esc(t.schools?.name)}</td><td>${esc(t.name)}</td><td>${esc(t.period)}</td><td><button class="btn btn-danger" onclick="delTurma('${t.id}')">Excluir</button></td></tr>`).join('')
     : '<tr><td colspan="4" class="empty">Nenhuma turma cadastrada.</td></tr>';
 }
+
 function renderOfertas() {
-  $('lista-ofertas').innerHTML = ofertas.length
-    ? ofertas.map(o => `<tr><td>${esc(o.classes?.schools?.name)}</td><td>${esc(o.classes?.name)} (${esc(o.classes?.period)})</td><td>${esc(o.disciplines?.name)}</td><td>${o.lesson_count}</td><td><button class="btn btn-danger" onclick="delOferta('${o.id}')">Excluir</button></td></tr>`).join('')
-    : '<tr><td colspan="5" class="empty">Nenhuma oferta cadastrada.</td></tr>';
+  const termo = $('filtro-tabela') ? $('filtro-tabela').value.toLowerCase() : '';
+  
+  let listaFiltrada = ofertas.filter(o => {
+    if (!termo) return true;
+    const txt = `${o.classes?.schools?.name} ${o.classes?.name} ${o.disciplines?.name}`.toLowerCase();
+    return txt.includes(termo);
+  });
+
+  $('lista-ofertas').innerHTML = listaFiltrada.length
+    ? listaFiltrada.map(o => `<tr>
+        <td>${esc(o.classes?.schools?.name)}</td>
+        <td>${esc(o.classes?.name)} (${esc(o.classes?.period)})</td>
+        <td>${esc(o.disciplines?.name)}</td>
+        <td>
+          <input type="number" min="1" value="${o.lesson_count}" style="width: 70px; padding: 4px; text-align: center; border: 1px solid #d1d5db; border-radius: 4px;" onchange="updateOferta('${o.id}', this.value)">
+        </td>
+        <td>
+          <button class="btn btn-dup" onclick="abrirModalDuplicar('${o.classes?.id}')">Duplicar</button>
+          <button class="btn btn-danger" onclick="delOferta('${o.id}')">Excluir</button>
+        </td>
+      </tr>`).join('')
+    : '<tr><td colspan="5" class="empty">Nenhuma oferta encontrada.</td></tr>';
 }
+
 function renderProfessores() {
   $('lista-professores').innerHTML = professores.length
     ? professores.map(p => `<tr>
@@ -281,6 +362,7 @@ function renderProfessores() {
     : '<tr><td colspan="6" class="empty">Nenhum professor cadastrado.</td></tr>';
 }
 
+// --- Ações CRUD ---
 async function addEscola() {
   const name = $('escola-nome').value.trim();
   const short_name = $('escola-short').value.trim() || null;
@@ -297,11 +379,8 @@ async function delEscola(id) {
   toast('Escola removida'); carregarTudo();
 }
 function abrirEdicaoEscola(id) {
-  const e = escolas.find(x => x.id === id);
-  if (!e) return;
-  $('edit-escola-id').value = e.id;
-  $('edit-escola-nome').value = e.name || '';
-  $('edit-escola-short').value = e.short_name || '';
+  const e = escolas.find(x => x.id === id); if (!e) return;
+  $('edit-escola-id').value = e.id; $('edit-escola-nome').value = e.name || ''; $('edit-escola-short').value = e.short_name || '';
   $('modal-escola').classList.add('show');
 }
 function fecharModalEscola() { $('modal-escola').classList.remove('show'); }
@@ -329,6 +408,7 @@ async function delDisciplina(id) {
   if (error) return toast(error.message, true);
   toast('Disciplina removida'); carregarTudo();
 }
+
 async function addTurma() {
   const school_id = $('turma-escola').value;
   const name = $('turma-nome').value.trim();
@@ -345,21 +425,109 @@ async function delTurma(id) {
   if (error) return toast(error.message, true);
   toast('Turma removida'); carregarTudo();
 }
+
+// --- Ofertas: Cadastro em Lote e Edição Rápida ---
 async function addOferta() {
   const class_id = $('oferta-turma').value;
-  const discipline_id = $('oferta-disciplina').value;
+  const discipline_ids = $('oferta-disciplina').tomselect.getValue(); // Retorna array
   const lesson_count = parseInt($('oferta-aulas').value, 10);
-  if (!class_id || !discipline_id || !lesson_count) return toast('Preencha todos os campos', true);
-  const { error } = await supabaseClient.from('class_disciplines').insert({ class_id, discipline_id, lesson_count });
-  if (error) return toast(error.message, true);
-  toast('Oferta adicionada'); carregarTudo();
+  
+  if (!class_id || discipline_ids.length === 0 || !lesson_count) return toast('Preencha todos os campos', true);
+  
+  const inserts = discipline_ids.map(discId => ({ class_id, discipline_id: discId, lesson_count }));
+  
+  const { error } = await supabaseClient.from('class_disciplines').insert(inserts);
+  if (error) {
+    if (error.code === '23505') { // unique violation
+      return toast('Uma das disciplinas selecionadas já está cadastrada nesta turma.', true);
+    }
+    return toast(error.message, true);
+  }
+  
+  $('oferta-disciplina').tomselect.clear();
+  toast(`${discipline_ids.length} oferta(s) adicionada(s)!`); 
+  carregarTudo();
 }
+
+async function updateOferta(id, novoValor) {
+  const lesson_count = parseInt(novoValor, 10);
+  if (isNaN(lesson_count) || lesson_count < 1) {
+    toast('Valor inválido', true);
+    return carregarTudo();
+  }
+  const { error } = await supabaseClient.from('class_disciplines').update({ lesson_count }).eq('id', id);
+  if (error) return toast(error.message, true);
+  toast('Quantidade de aulas atualizada!');
+  // Atualiza o cache local para não precisar recarregar a página toda
+  const oferta = ofertas.find(o => o.id === id);
+  if (oferta) oferta.lesson_count = lesson_count;
+}
+
 async function delOferta(id) {
   if (!confirm('Excluir esta oferta?')) return;
   const { error } = await supabaseClient.from('class_disciplines').delete().eq('id', id);
   if (error) return toast(error.message, true);
   toast('Oferta removida'); carregarTudo();
 }
+
+// --- Duplicar Ofertas de uma Turma ---
+function abrirModalDuplicar(classId) {
+  const turmaOrigem = turmas.find(t => t.id === classId);
+  if (!turmaOrigem) return;
+
+  $('dup-origem-id').value = classId;
+  $('dup-origem-nome').value = `${turmaOrigem.schools?.name} — ${turmaOrigem.name} (${turmaOrigem.period})`;
+
+  // Popula os destinos, exceto a própria origem
+  const destinos = turmas.filter(t => t.id !== classId);
+  $('dup-destino-id').innerHTML = destinos.map(t => 
+    `<option value="${t.id}">${esc(t.schools?.name)} — ${esc(t.name)} (${esc(t.period)})</option>`
+  ).join('');
+
+  $('modal-duplicar').classList.add('show');
+}
+
+function fecharModalDuplicar() {
+  $('modal-duplicar').classList.remove('show');
+}
+
+async function confirmarDuplicar() {
+  const origemId = $('dup-origem-id').value;
+  const destinoId = $('dup-destino-id').value;
+  if (!destinoId) return toast('Selecione a turma de destino', true);
+
+  const ofertasOrigem = ofertas.filter(o => o.classes?.id === origemId);
+  if (ofertasOrigem.length === 0) return toast('A turma de origem não possui ofertas.', true);
+
+  // Verifica se o destino já tem ofertas para evitar duplicar a mesma disciplina
+  const ofertasDestino = ofertas.filter(o => o.classes?.id === destinoId);
+
+  const inserts = [];
+  ofertasOrigem.forEach(orig => {
+    const jaExiste = ofertasDestino.some(dest => dest.discipline_id === orig.discipline_id);
+    if (!jaExiste) {
+      inserts.push({
+        class_id: destinoId,
+        discipline_id: orig.discipline_id,
+        lesson_count: orig.lesson_count
+      });
+    }
+  });
+
+  if (inserts.length === 0) {
+    fecharModalDuplicar();
+    return toast('Todas as disciplinas desta turma já existem na turma de destino.', true);
+  }
+
+  const { error } = await supabaseClient.from('class_disciplines').insert(inserts);
+  if (error) return toast(error.message, true);
+
+  fecharModalDuplicar();
+  toast(`${inserts.length} oferta(s) copiada(s) com sucesso!`);
+  carregarTudo();
+}
+
+// --- Professores ---
 async function addProfessor() {
   const full_name = $('prof-nome').value.trim();
   const email = $('prof-email').value.trim() || null;
@@ -380,14 +548,10 @@ async function delProfessor(id) {
   toast('Professor removido'); carregarTudo();
 }
 function abrirEdicaoProf(id) {
-  const p = professores.find(x => x.id === id);
-  if (!p) return;
-  $('edit-prof-id').value = p.id;
-  $('edit-prof-nome').value = p.full_name || '';
-  $('edit-prof-email').value = p.email || '';
-  $('edit-prof-rg').value = p.rg || '';
-  $('edit-prof-cpf').value = p.cpf || '';
-  $('edit-prof-disciplina').value = p.discipline_id || '';
+  const p = professores.find(x => x.id === id); if (!p) return;
+  $('edit-prof-id').value = p.id; $('edit-prof-nome').value = p.full_name || '';
+  $('edit-prof-email').value = p.email || ''; $('edit-prof-rg').value = p.rg || '';
+  $('edit-prof-cpf').value = p.cpf || ''; $('edit-prof-disciplina').value = p.discipline_id || '';
   $('modal-prof').classList.add('show');
 }
 function fecharModalProf() { $('modal-prof').classList.remove('show'); }
