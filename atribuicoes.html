@@ -310,7 +310,8 @@ function renderCartao(o, fase) {
     const tipo = estado.assignment.assignment_type;
     if (tipo === 'Substituição') { badge = `<span class="badge badge-substituted">Subst.: ${esc(nome)}</span>`; classeEstado = 'estado-substituicao'; } 
     else { badge = `<span class="badge badge-taken">${esc(tipo)}: ${esc(nome)}</span>`; classeEstado = 'estado-atribuida'; }
-    acao = `<button class="btn btn-warning btn-sm" onclick="deixar('${estado.assignment.id}')">Deixou a turma</button>`;
+    // TEXTO DO BOTÃO ALTERADO AQUI
+    acao = `<button class="btn btn-warning btn-sm" onclick="deixar('${estado.assignment.id}')">Deixar esta turma</button>`;
   } else if (estado.status === 'Deixada') {
     const nome = teacherMap[estado.assignment.teacher_id]?.full_name || '—';
     badge = `<span class="badge badge-left">Deixada: ${esc(nome)}</span>`; classeEstado = 'estado-deixada';
