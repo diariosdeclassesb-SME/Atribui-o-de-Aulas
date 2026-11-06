@@ -25,6 +25,7 @@
   .btn-primary { background: var(--primary); color: white; } .btn-primary:hover { background: var(--primary-dark); }
   .btn-warning { background: var(--warning); color: white; } .btn-warning:hover { background: #b45309; }
   .btn-success { background: var(--success); color: white; } .btn-success:hover { background: #047857; }
+  .btn-secondary { background: #6b7280; color: white; } .btn-secondary:hover { background: #4b5563; }
   .btn-sm { padding: 5px 10px; font-size: 12px; }
   
   .resumo { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 8px; }
@@ -81,6 +82,27 @@
   .ts-control { min-height: 38px; padding: 8px 12px; font-size: 14px; border-radius: 6px; display: flex; align-items: center; }
   .ts-dropdown { font-size: 14px; width: 100%; min-width: 280px; }
   .ts-dropdown .option { padding: 8px 12px; }
+
+  /* ESTILOS DO COMPROVANTE */
+  #comprovante-box { display: none; padding: 20px; font-family: Arial, sans-serif; color: #000; background: #fff; }
+  .comp-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+  .comp-header h2 { margin: 0 0 5px; font-size: 18px; }
+  .comp-header p { margin: 0; font-size: 12px; color: #444; }
+  .comp-info { margin-bottom: 20px; font-size: 14px; }
+  .comp-info p { margin: 4px 0; }
+  table.comp-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 30px; }
+  table.comp-table th, table.comp-table td { border: 1px solid #000; padding: 6px 8px; text-align: left; }
+  table.comp-table th { background: #f3f4f6; font-weight: bold; }
+  .comp-assinatura { text-align: center; margin-top: 50px; font-size: 12px; }
+  .comp-assinatura .linha { border-top: 1px solid #000; width: 300px; margin: 0 auto 5px; }
+
+  @media print {
+    body * { visibility: hidden; }
+    #comprovante-box, #comprovante-box * { visibility: visible; }
+    #comprovante-box { position: absolute; left: 0; top: 0; width: 100%; display: block !important; }
+    header, .container { display: none !important; }
+    @page { size: A4 portrait; margin: 15mm; }
+  }
 </style>
 </head>
 <body>
@@ -119,9 +141,14 @@
   </div>
 
   <div class="card" id="card-resumo" style="display:none;">
-    <h2>Professor selecionado</h2>
-    <p class="professor-nome" id="resumo-nome">—</p>
-    <p class="professor-disciplina" id="resumo-disciplina">—</p>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+      <div>
+        <h2>Professor selecionado</h2>
+        <p class="professor-nome" id="resumo-nome">—</p>
+        <p class="professor-disciplina" id="resumo-disciplina">—</p>
+      </div>
+      <button class="btn btn-secondary" onclick="gerarComprovante()">🖨️ Imprimir Comprovante</button>
+    </div>
     <div class="resumo">
       <div class="resumo-item"><div class="label">Turmas ativas</div><div class="valor" id="resumo-turmas">0</div></div>
       <div class="resumo-item"><div class="label">Total de aulas</div><div class="valor" id="resumo-aulas">0</div></div>
@@ -135,6 +162,9 @@
     <div id="blocos-escolas"><div class="empty-bloco">Selecione uma disciplina para ver as turmas.</div></div>
   </div>
 </div>
+
+<!-- O COMPROVANTE FICA AQUI, OCULTO NA TELA E VISÍVEL NA IMPRESSÃO -->
+<div id="comprovante-box"></div>
 
 <div class="toast" id="toast"></div>
 
@@ -239,32 +269,20 @@ function renderizar() {
   const discIds = discId ? [discId] : [];
   let avisoTexto = '';
 
-  // REGRA 1: História puxa Religiosidade
   if (disciplinaSelecionada?.name === 'História') {
     const rel = disciplinas.find(d => d.name === 'Religiosidade');
-    if (rel) { 
-      discIds.push(rel.id); 
-      avisoTexto = 'Incluindo também as ofertas de <strong>Religiosidade</strong>, pois professores de História assumem essas aulas.'; 
-    }
+    if (rel) { discIds.push(rel.id); avisoTexto = 'Incluindo também as ofertas de <strong>Religiosidade</strong>, pois professores de História assumem essas aulas.'; }
   } 
-  // REGRA 2: Polivalente - PEB I puxa Literatura e Música
   else if (disciplinaSelecionada?.name === 'Polivalente - PEB I') {
     const lit = disciplinas.find(d => d.name.includes('Literatura'));
     const mus = disciplinas.find(d => d.name.includes('Música'));
     if (lit) discIds.push(lit.id);
     if (mus) discIds.push(mus.id);
-    
-    if (lit || mus) {
-      avisoTexto = 'Incluindo também as ofertas de <strong>Literatura</strong> e <strong>Música</strong>, pois professores de Polivalente - PEB I assumem essas aulas.';
-    }
+    if (lit || mus) avisoTexto = 'Incluindo também as ofertas de <strong>Literatura</strong> e <strong>Música</strong>, pois professores de Polivalente - PEB I assumem essas aulas.';
   }
 
-  if (avisoTexto) {
-    $('aviso-rel').innerHTML = avisoTexto;
-    $('aviso-rel').style.display = 'block';
-  } else {
-    $('aviso-rel').style.display = 'none';
-  }
+  if (avisoTexto) { $('aviso-rel').innerHTML = avisoTexto; $('aviso-rel').style.display = 'block'; } 
+  else { $('aviso-rel').style.display = 'none'; }
 
   if (!discId) { $('blocos-escolas').innerHTML = '<div class="empty-bloco">Selecione uma disciplina para ver as turmas.</div>'; return; }
 
@@ -310,7 +328,6 @@ function renderCartao(o, fase) {
     const tipo = estado.assignment.assignment_type;
     if (tipo === 'Substituição') { badge = `<span class="badge badge-substituted">Subst.: ${esc(nome)}</span>`; classeEstado = 'estado-substituicao'; } 
     else { badge = `<span class="badge badge-taken">${esc(tipo)}: ${esc(nome)}</span>`; classeEstado = 'estado-atribuida'; }
-    // TEXTO DO BOTÃO ALTERADO AQUI
     acao = `<button class="btn btn-warning btn-sm" onclick="deixar('${estado.assignment.id}')">Deixar esta turma</button>`;
   } else if (estado.status === 'Deixada') {
     const nome = teacherMap[estado.assignment.teacher_id]?.full_name || '—';
@@ -403,6 +420,93 @@ async function recarregarAssignments() {
   if (error) return toast(error.message, true);
   assignments = data || []; renderizar();
 }
+
+// --- GERAR COMPROVANTE DE IMPRESSÃO ---
+function gerarComprovante() {
+  const profId = $('filtro-professor').value;
+  if (!profId) return toast('Selecione um professor primeiro', true);
+  
+  const prof = teacherMap[profId];
+  const disc = disciplinas.find(d => d.id === prof?.discipline_id);
+  
+  const ativas = assignments.filter(a => a.teacher_id === profId && a.status === 'Ativo');
+  const ofertasDoProf = ativas.map(a => {
+    const o = ofertas.find(x => x.id === a.class_discipline_id);
+    if (!o) return null;
+    return { ...o, tipo: a.assignment_type };
+  }).filter(Boolean);
+
+  if (ofertasDoProf.length === 0) return toast('O professor não possui turmas atribuídas.', true);
+
+  // Agrupa por tipo
+  const titulares = ofertasDoProf.filter(o => o.tipo === 'Titular');
+  const cargas = ofertasDoProf.filter(o => o.tipo === 'Carga Suplementar');
+  const subs = ofertasDoProf.filter(o => o.tipo === 'Substituição');
+  const totalAulas = ofertasDoProf.reduce((s, o) => s + (o.lesson_count || 0), 0);
+
+  const rows = [];
+  const addRows = (lista, label) => {
+    if (lista.length === 0) return;
+    rows.push(`<tr><td colspan="5" style="background:#f9fafb; font-weight:bold; text-align:center;">${label}</td></tr>`);
+    lista.forEach(o => {
+      rows.push(`<tr>
+        <td>${esc(o.classes?.schools?.name || '—')}</td>
+        <td>${esc(o.classes?.name || '—')}</td>
+        <td>${esc(o.classes?.period || '—')}</td>
+        <td>${esc(o.disciplines?.name || '—')}</td>
+        <td style="text-align:center;">${o.lesson_count}</td>
+      </tr>`);
+    });
+  };
+
+  addRows(titulares, 'Fase 1 — Lotação');
+  addRows(cargas, 'Fase 2 — Carga Suplementar');
+  addRows(subs, 'Fase 3 — Substituição');
+
+  const html = `
+    <div class="comp-header">
+      <h2>PREFEITURA MUNICIPAL DE SANTA BRANCA</h2>
+      <p>SECRETARIA MUNICIPAL DE EDUCAÇÃO</p>
+      <p style="margin-top:10px; font-size:14px; font-weight:bold;">COMPROVANTE DE ATRIBUIÇÃO DE AULAS</p>
+    </div>
+    
+    <div class="comp-info">
+      <p><strong>Professor(a):</strong> ${esc(prof.full_name)}</p>
+      <p><strong>Disciplina:</strong> ${esc(disc?.name || '—')}</p>
+      <p><strong>Data da Emissão:</strong> ${new Date().toLocaleDateString('pt-BR')}</p>
+    </div>
+
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>Escola</th>
+          <th>Turma</th>
+          <th>Período</th>
+          <th>Disciplina</th>
+          <th style="text-align:center; width: 60px;">Aulas</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.join('')}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="4" style="text-align:right; font-weight:bold;">TOTAL DE AULAS ATRIBUÍDAS:</td>
+          <td style="text-align:center; font-weight:bold; font-size:15px;">${totalAulas}</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="comp-assinatura">
+      <div class="linha"></div>
+      <p>Assinatura do(a) Professor(a)</p>
+    </div>
+  `;
+
+  $('comprovante-box').innerHTML = html;
+  window.print();
+}
+// ---------------------------------------
 
 $('filtro-disciplina').addEventListener('change', () => { atualizarProfessores(); renderizar(); });
 $('filtro-professor').addEventListener('change', renderizar);
