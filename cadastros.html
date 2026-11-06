@@ -25,16 +25,15 @@
   .panel { display: none; } .panel.active { display: block; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
   
-  /* Aumentado o tamanho mínimo das colunas para os menus não ficarem espremidos */
   .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; align-items: end; }
   
   label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
   input, select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white; }
   button.btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; white-space: nowrap; height: 38px; }
   .btn-primary { background: var(--primary); color: white; } .btn-primary:hover { background: var(--primary-dark); }
-  .btn-danger { background: var(--danger); color: white; padding: 4px 10px; font-size: 12px; }
-  .btn-edit { background: #6b7280; color: white; padding: 4px 10px; font-size: 12px; margin-right: 4px; }
-  .btn-dup { background: #059669; color: white; padding: 4px 10px; font-size: 12px; margin-right: 4px; }
+  .btn-danger { background: var(--danger); color: white; padding: 4px 10px; font-size: 12px; height: 28px; }
+  .btn-edit { background: #6b7280; color: white; padding: 4px 10px; font-size: 12px; margin-right: 4px; height: 28px; }
+  .btn-dup { background: #059669; color: white; padding: 4px 10px; font-size: 12px; margin-right: 4px; height: 28px; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
   th { background: #f9fafb; font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; }
@@ -48,11 +47,8 @@
   .modal h3 { margin: 0 0 16px; font-size: 16px; }
   .modal .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
   
-  /* Ajustes do Tom Select */
   .ts-wrapper { width: 100%; min-width: 220px; }
   .ts-control { min-height: 38px; padding: 8px 12px; font-size: 14px; border-radius: 6px; display: flex; align-items: center; }
-  
-  /* Força a lista suspensa a ser mais larga que a caixa para ler o nome inteiro */
   .ts-dropdown { font-size: 14px; width: 100%; min-width: 280px; } 
   .ts-dropdown .option { padding: 8px 12px; }
 </style>
@@ -115,7 +111,12 @@
       </div>
     </div>
     <div class="card">
-      <table><thead><tr><th>Escola</th><th>Turma</th><th>Período</th><th style="width:80px">Ações</th></tr></thead><tbody id="lista-turmas"></tbody></table>
+      <table>
+        <thead>
+          <tr><th>Escola</th><th>Turma</th><th>Período</th><th style="width:160px">Ações</th></tr>
+        </thead>
+        <tbody id="lista-turmas"></tbody>
+      </table>
     </div>
   </section>
 
@@ -168,7 +169,7 @@
   </section>
 </div>
 
-<!-- Modais... -->
+<!-- Modais -->
 <div class="modal-bg" id="modal-escola">
   <div class="modal">
     <h3>Editar escola</h3>
@@ -180,6 +181,28 @@
     <div class="actions">
       <button class="btn" style="background:#e5e7eb" onclick="fecharModalEscola()">Cancelar</button>
       <button class="btn btn-primary" onclick="salvarEdicaoEscola()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- NOVO MODAL: Editar Turma -->
+<div class="modal-bg" id="modal-turma">
+  <div class="modal">
+    <h3>Editar turma</h3>
+    <input type="hidden" id="edit-turma-id" />
+    <div style="display:grid;gap:10px;">
+      <div><label>Escola</label><select id="edit-turma-escola"></select></div>
+      <div><label>Nome da turma</label><input id="edit-turma-nome" /></div>
+      <div>
+        <label>Período</label>
+        <select id="edit-turma-periodo">
+          <option>Manhã</option><option>Tarde</option><option>Noite</option><option>Integral</option>
+        </select>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn" style="background:#e5e7eb" onclick="fecharModalTurma()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEdicaoTurma()">Salvar</button>
     </div>
   </div>
 </div>
@@ -284,48 +307,40 @@ async function carregarTudo() {
 }
 
 function preencherSelects() {
-  // Turma - Escola (Tom Select)
   if ($('turma-escola').tomselect) $('turma-escola').tomselect.destroy();
   $('turma-escola').innerHTML = escolas.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
   new TomSelect('#turma-escola', { create: false, sortField: 'text' });
 
-  // Oferta - Escola (Tom Select)
   if ($('oferta-escola').tomselect) $('oferta-escola').tomselect.destroy();
   $('oferta-escola').innerHTML = '<option value="">Selecione a escola...</option>' + escolas.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
   new TomSelect('#oferta-escola', { create: false, sortField: 'text' });
 
-  // Inicializa Turma da Oferta vazia (será preenchida ao escolher a escola)
   if ($('oferta-turma').tomselect) $('oferta-turma').tomselect.destroy();
   $('oferta-turma').innerHTML = '<option value="">Escolha a escola primeiro...</option>';
   new TomSelect('#oferta-turma', { create: false });
 
-  // Oferta - Disciplinas (Múltiplas)
   if ($('oferta-disciplina').tomselect) $('oferta-disciplina').tomselect.destroy();
   $('oferta-disciplina').innerHTML = disciplinas.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('');
-  new TomSelect('#oferta-disciplina', {
-    plugins: ['remove_button'],
-    maxItems: null,
-    placeholder: "Selecione as disciplinas..."
-  });
+  new TomSelect('#oferta-disciplina', { plugins: ['remove_button'], maxItems: null, placeholder: "Selecione as disciplinas..." });
 
-  // Professor - Disciplina (Tom Select)
   if ($('prof-disciplina').tomselect) $('prof-disciplina').tomselect.destroy();
   $('prof-disciplina').innerHTML = disciplinas.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('');
   new TomSelect('#prof-disciplina', { create: false, sortField: 'text' });
 
-  // Edição de Professor - Disciplina (Tom Select)
   if ($('edit-prof-disciplina').tomselect) $('edit-prof-disciplina').tomselect.destroy();
   $('edit-prof-disciplina').innerHTML = disciplinas.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('');
   new TomSelect('#edit-prof-disciplina', { create: false, sortField: 'text' });
+
+  // Inicializa o select da Escola no Modal de Editar Turma
+  if ($('edit-turma-escola').tomselect) $('edit-turma-escola').tomselect.destroy();
+  $('edit-turma-escola').innerHTML = escolas.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
+  new TomSelect('#edit-turma-escola', { create: false, sortField: 'text' });
 }
 
-// Atualiza as turmas com base na escola escolhida
 function atualizarTurmasOferta() {
   const schoolId = $('oferta-escola').tomselect.getValue();
   
-  if ($('oferta-turma').tomselect) {
-    $('oferta-turma').tomselect.destroy();
-  }
+  if ($('oferta-turma').tomselect) $('oferta-turma').tomselect.destroy();
 
   if (!schoolId) {
     $('oferta-turma').innerHTML = '<option value="">Escolha a escola primeiro...</option>';
@@ -334,7 +349,6 @@ function atualizarTurmasOferta() {
   }
 
   const turmasDaEscola = turmas.filter(t => t.school_id === schoolId);
-
   $('oferta-turma').innerHTML = '<option value="">Selecione a turma...</option>' + 
     turmasDaEscola.map(t => `<option value="${t.id}">${esc(t.name)} (${esc(t.period)})</option>`).join('');
   
@@ -359,8 +373,17 @@ function renderDisciplinas() {
     : '<tr><td colspan="2" class="empty">Nenhuma disciplina cadastrada.</td></tr>';
 }
 function renderTurmas() {
+  // AQUI FOI ADICIONADO O BOTÃO DE EDITAR TURMA
   $('lista-turmas').innerHTML = turmas.length
-    ? turmas.map(t => `<tr><td>${esc(t.schools?.name)}</td><td>${esc(t.name)}</td><td>${esc(t.period)}</td><td><button class="btn btn-danger" onclick="delTurma('${t.id}')">Excluir</button></td></tr>`).join('')
+    ? turmas.map(t => `<tr>
+        <td>${esc(t.schools?.name)}</td>
+        <td>${esc(t.name)}</td>
+        <td>${esc(t.period)}</td>
+        <td>
+          <button class="btn btn-edit" onclick="abrirEdicaoTurma('${t.id}')">Editar</button>
+          <button class="btn btn-danger" onclick="delTurma('${t.id}')">Excluir</button>
+        </td>
+      </tr>`).join('')
     : '<tr><td colspan="4" class="empty">Nenhuma turma cadastrada.</td></tr>';
 }
 
@@ -453,7 +476,7 @@ async function delDisciplina(id) {
 }
 
 async function addTurma() {
-  const school_id = $('turma-escola').tomselect.getValue(); // Uso seguro do TomSelect
+  const school_id = $('turma-escola').tomselect.getValue();
   const name = $('turma-nome').value.trim();
   const period = $('turma-periodo').value;
   if (!school_id || !name) return toast('Preencha escola e nome', true);
@@ -470,9 +493,48 @@ async function delTurma(id) {
   toast('Turma removida'); carregarTudo();
 }
 
+// --- NOVAS FUNÇÕES DE EDIÇÃO DE TURMA ---
+function abrirEdicaoTurma(id) {
+  const t = turmas.find(x => x.id === id);
+  if (!t) return;
+  
+  $('edit-turma-id').value = t.id;
+  $('edit-turma-nome').value = t.name || '';
+  $('edit-turma-periodo').value = t.period || 'Manhã';
+  
+  if ($('edit-turma-escola').tomselect) {
+    $('edit-turma-escola').tomselect.setValue(t.school_id);
+  } else {
+    $('edit-turma-escola').value = t.school_id;
+  }
+  
+  $('modal-turma').classList.add('show');
+}
+
+function fecharModalTurma() {
+  $('modal-turma').classList.remove('show');
+}
+
+async function salvarEdicaoTurma() {
+  const id = $('edit-turma-id').value;
+  const school_id = $('edit-turma-escola').tomselect.getValue();
+  const name = $('edit-turma-nome').value.trim();
+  const period = $('edit-turma-periodo').value;
+  
+  if (!school_id || !name) return toast('Preencha todos os campos', true);
+  
+  const { error } = await supabaseClient.from('classes').update({ school_id, name, period }).eq('id', id);
+  if (error) return toast(error.message, true);
+  
+  fecharModalTurma();
+  toast('Turma atualizada com sucesso!');
+  carregarTudo();
+}
+// -----------------------------------------
+
 // --- Ofertas ---
 async function addOferta() {
-  const class_id = $('oferta-turma').tomselect.getValue(); // Uso seguro do TomSelect
+  const class_id = $('oferta-turma').tomselect.getValue();
   const discipline_ids = $('oferta-disciplina').tomselect.getValue();
   const lesson_count = parseInt($('oferta-aulas').value, 10);
   
@@ -577,7 +639,7 @@ async function addProfessor() {
   const email = $('prof-email').value.trim() || null;
   const rg = $('prof-rg').value.trim() || null;
   const cpf = $('prof-cpf').value.trim() || null;
-  const discipline_id = $('prof-disciplina').tomselect.getValue() || null; // Uso seguro do TomSelect
+  const discipline_id = $('prof-disciplina').tomselect.getValue() || null;
   if (!full_name) return toast('Digite o nome do professor', true);
   const { error } = await supabaseClient.from('teachers').insert({ full_name, email, rg, cpf, discipline_id });
   if (error) return toast(error.message, true);
@@ -610,7 +672,7 @@ async function salvarEdicaoProf() {
   const email = $('edit-prof-email').value.trim() || null;
   const rg = $('edit-prof-rg').value.trim() || null;
   const cpf = $('edit-prof-cpf').value.trim() || null;
-  const discipline_id = $('edit-prof-disciplina').tomselect.getValue() || null; // Uso seguro do TomSelect
+  const discipline_id = $('edit-prof-disciplina').tomselect.getValue() || null;
   if (!full_name) return toast('Digite o nome', true);
   const { error } = await supabaseClient.from('teachers').update({ full_name, email, rg, cpf, discipline_id }).eq('id', id);
   if (error) return toast(error.message, true);
