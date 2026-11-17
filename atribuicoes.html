@@ -269,20 +269,33 @@ function renderizar() {
   const discIds = discId ? [discId] : [];
   let avisoTexto = '';
 
+  // REGRA 1: História puxa Religiosidade
   if (disciplinaSelecionada?.name === 'História') {
     const rel = disciplinas.find(d => d.name === 'Religiosidade');
-    if (rel) { discIds.push(rel.id); avisoTexto = 'Incluindo também as ofertas de <strong>Religiosidade</strong>, pois professores de História assumem essas aulas.'; }
+    if (rel) { 
+      discIds.push(rel.id); 
+      avisoTexto = 'Incluindo também as ofertas de <strong>Religiosidade</strong>, pois professores de História assumem essas aulas.'; 
+    }
   } 
-  else if (disciplinaSelecionada?.name === 'Polivalente - PEB I') {
+  // REGRA 2: Polivalente - PEB I puxa Literatura e Música (RESTRITO E CORRIGIDO)
+  else if (disciplinaSelecionada?.name.includes('Polivalente - PEB I')) {
     const lit = disciplinas.find(d => d.name.includes('Literatura'));
     const mus = disciplinas.find(d => d.name.includes('Música'));
     if (lit) discIds.push(lit.id);
     if (mus) discIds.push(mus.id);
-    if (lit || mus) avisoTexto = 'Incluindo também as ofertas de <strong>Literatura</strong> e <strong>Música</strong>, pois professores de Polivalente - PEB I assumem essas aulas.';
+    
+    if (lit || mus) {
+      avisoTexto = 'Incluindo também as ofertas de <strong>Literatura</strong> e <strong>Música</strong>, pois professores de <strong>Polivalente - PEB I</strong> assumem essas aulas.';
+    }
   }
 
-  if (avisoTexto) { $('aviso-rel').innerHTML = avisoTexto; $('aviso-rel').style.display = 'block'; } 
-  else { $('aviso-rel').style.display = 'none'; }
+  if (avisoTexto) { 
+    $('aviso-rel').innerHTML = avisoTexto; 
+    $('aviso-rel').style.display = 'block'; 
+  } 
+  else { 
+    $('aviso-rel').style.display = 'none'; 
+  }
 
   if (!discId) { $('blocos-escolas').innerHTML = '<div class="empty-bloco">Selecione uma disciplina para ver as turmas.</div>'; return; }
 
