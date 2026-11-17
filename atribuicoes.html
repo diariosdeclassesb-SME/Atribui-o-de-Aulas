@@ -269,8 +269,11 @@ function renderizar() {
   const discIds = discId ? [discId] : [];
   let avisoTexto = '';
 
+  // Normaliza o nome para evitar erros de espaço ou maiúscula/minúscula
+  const nomeDiscNormalizado = (disciplinaSelecionada?.name || '').trim().toUpperCase();
+
   // REGRA 1: História puxa Religiosidade
-  if (disciplinaSelecionada?.name === 'História') {
+  if (nomeDiscNormalizado === 'HISTÓRIA') {
     const rel = disciplinas.find(d => d.name === 'Religiosidade');
     if (rel) { 
       discIds.push(rel.id); 
@@ -278,14 +281,14 @@ function renderizar() {
     }
   } 
   // REGRA 2: Polivalente - PEB I puxa Literatura e Música (RESTRITO E CORRIGIDO)
-  else if (disciplinaSelecionada?.name.includes('Polivalente - PEB I')) {
+  else if (nomeDiscNormalizado === 'POLIVALENTE - PEB I') {
     const lit = disciplinas.find(d => d.name.includes('Literatura'));
     const mus = disciplinas.find(d => d.name.includes('Música'));
     if (lit) discIds.push(lit.id);
     if (mus) discIds.push(mus.id);
     
     if (lit || mus) {
-      avisoTexto = 'Incluindo também as ofertas de <strong>Literatura</strong> e <strong>Música</strong>, pois professores <strong>Polivalente - PEB I</strong> assumem essas aulas.';
+      avisoTexto = 'Incluindo também as ofertas de <strong>Literatura</strong> e <strong>Música</strong>, pois professores de <strong>Polivalente - PEB I</strong> assumem essas aulas.';
     }
   }
 
