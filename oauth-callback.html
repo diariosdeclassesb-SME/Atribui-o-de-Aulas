@@ -6,7 +6,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <p style="text-align: center; margin-top: 50px; font-family: sans-serif;">Autenticando via Portal SME, aguarde...</p>
+    <div style="text-align: center; margin-top: 50px; font-family: sans-serif;">
+        <p id="status">Autenticando via Portal SME, aguarde...</p>
+        <p id="error" style="color: red; font-weight: bold; display: none;"></p>
+    </div>
     <script>
         const PORTAL_SUPABASE_URL = 'https://zoyiphlxylsxhefmkcwz.supabase.co';
         const PORTAL_SUPABASE_KEY = 'sb_publishable_bgyHgeKxR7-3ftWx0wYVxg_5k_n7Pzx';
@@ -19,20 +22,23 @@
             const code = new URLSearchParams(window.location.search).get('code');
             
             if (!code) { 
-                window.location.href = 'index.html'; 
+                document.getElementById('status').textContent = 'Nenhum código encontrado. Redirecionando para login...';
+                setTimeout(() => { window.location.href = 'index.html'; }, 2000);
                 return; 
             }
 
             const { data, error } = await supabasePortal.auth.exchangeCodeForSession(code);
             
             if (error) {
-                console.error('Erro ao trocar código:', error);
-                alert('Erro ao autenticar. Tente novamente.');
-                window.location.href = 'index.html';
+                document.getElementById('status').textContent = 'Falha na autenticação:';
+                const errorEl = document.getElementById('error');
+                errorEl.textContent = error.message;
+                errorEl.style.display = 'block';
+                console.error('Erro completo:', error);
                 return;
             }
             
-            // Redireciona para a página principal do Atribuição
+            // PÁGINA PRINCIPAL DO ATRIBUIÇÃO
             window.location.href = 'cadastros.html'; 
         }
         
