@@ -69,7 +69,6 @@
             if (portalSession || forceSSO) {
                 document.getElementById('loginScreen').classList.add('hidden');
 
-                // Redirecionamento manual para o OAuth Server do Supabase
                 const authUrl = new URL('https://zoyiphlxylsxhefmkcwz.supabase.co/auth/v1/oauth/authorize');
                 authUrl.searchParams.set('client_id', CLIENT_ID);
                 authUrl.searchParams.set('redirect_uri', REDIRECT_URI);
