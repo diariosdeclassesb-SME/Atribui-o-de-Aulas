@@ -7,109 +7,92 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body {
-            background-image: url('Imagem1.png');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            position: relative;
-        }
-        body::before {
-            content: "";
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
-            z-index: 0;
-        }
+        body { background-image: url('Imagem1.png'); background-size: cover; background-position: center; background-attachment: fixed; position: relative; }
+        body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 0; }
         .min-h-screen { position: relative; z-index: 1; }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 1rem;
-        }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 1rem; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body class="bg-gray-100">
-    <div class="min-h-screen flex items-center justify-center p-4">
+    <div id="loadingScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="text-white text-center">
+            <svg class="animate-spin h-10 w-10 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <p>Autenticando...</p>
+        </div>
+    </div>
+
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4 hidden">
         <div class="bg-white p-8 rounded-xl shadow-2xl w-96 glass-card">
             <div class="flex justify-center mb-4">
                 <div class="bg-blue-100 rounded-full p-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                 </div>
             </div>
             <h2 class="text-2xl font-bold text-center text-gray-800">Sistema de Atribuição de Aulas</h2>
             <p class="text-center text-sm text-gray-500 mb-6">Secretaria Municipal de Santa Branca</p>
-
             <form id="loginForm">
                 <div class="mb-4">
                     <label class="block text-gray-700 mb-2 font-medium">E-mail</label>
-                    <input type="email" id="email" required
-                           class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:border-blue-500">
+                    <input type="email" id="email" required class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:border-blue-500">
                 </div>
                 <div class="mb-6">
                     <label class="block text-gray-700 mb-2 font-medium">Senha</label>
-                    <input type="password" id="senha" required
-                           class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:border-blue-500">
+                    <input type="password" id="senha" required class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:border-blue-500">
                 </div>
-                <button type="submit"
-                        class="w-full bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition font-semibold">
-                    Entrar
-                </button>
+                <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition font-semibold">Entrar</button>
             </form>
-
             <div id="mensagemErro" class="mt-4 text-red-500 text-center hidden text-sm"></div>
             <p class="mt-6 text-center text-xs text-gray-500">Apenas usuários autorizados</p>
         </div>
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://dflzprsopnwgobcxuqfu.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_HAMF9aaI6tEtztq4pXAVPw_PM_9wyad';
+        const SITE_SUPABASE_URL = 'https://dflzprsopnwgobcxuqfu.supabase.co';
+        const SITE_SUPABASE_KEY = 'sb_publishable_HAMF9aaI6tEtztq4pXAVPw_PM_9wyad';
+        const supabaseSite = window.supabase.createClient(SITE_SUPABASE_URL, SITE_SUPABASE_KEY);
 
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const PORTAL_SUPABASE_URL = 'https://zoyiphlxylsxhefmkcwz.supabase.co';
+        const PORTAL_SUPABASE_KEY = 'sb_publishable_bgyHgeKxR7-3ftWx0wYVxg_5k_n7Pzx';
+        const supabasePortal = window.supabase.createClient(PORTAL_SUPABASE_URL, PORTAL_SUPABASE_KEY, { auth: { flowType: 'pkce', detectSessionInUrl: true } });
 
-        // Se já estiver logado, vai direto para cadastros
-        async function verificarSessao() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) {
-                window.location.href = 'cadastros.html';
+        const CLIENT_ID = '5190bfa4-2a46-47ab-befb-26432496ebd3'; 
+        const REDIRECT_URI = 'https://atribuicaodeaulas.netlify.app/oauth-callback.html';
+
+        async function init() {
+            const { data: { session: localSession } } = await supabaseSite.auth.getSession();
+            if (localSession) { window.location.href = 'cadastros.html'; return; }
+
+            const forceSSO = new URLSearchParams(window.location.search).get('sso') === 'true';
+            const { data: { session: portalSession } } = await supabasePortal.auth.getSession();
+
+            if (portalSession || forceSSO) {
+                document.getElementById('loginScreen').classList.add('hidden');
+                await supabasePortal.auth.signInWithOAuth({
+                    provider: 'supabase',
+                    options: { redirectTo: REDIRECT_URI, queryParams: { client_id: CLIENT_ID, response_type: 'code', scope: 'openid profile email' } }
+                });
+            } else {
+                document.getElementById('loadingScreen').classList.add('hidden');
+                document.getElementById('loginScreen').classList.remove('hidden');
             }
         }
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-
-            const email = document.getElementById('email').value;
-            const senha = document.getElementById('senha').value;
-            const btnSubmit = e.target.querySelector('button');
-            const msgErro = document.getElementById('mensagemErro');
-            const textoOriginal = btnSubmit.textContent;
-
-            btnSubmit.textContent = 'Entrando...';
-            btnSubmit.disabled = true;
-
-            const { error } = await supabaseClient.auth.signInWithPassword({
-                email: email,
-                password: senha
-            });
-
-            btnSubmit.textContent = textoOriginal;
-            btnSubmit.disabled = false;
-
+            const btn = e.target.querySelector('button');
+            btn.textContent = 'Entrando...'; btn.disabled = true;
+            const { error } = await supabaseSite.auth.signInWithPassword({ email: document.getElementById('email').value, password: document.getElementById('senha').value });
+            btn.textContent = 'Entrar'; btn.disabled = false;
             if (error) {
-                msgErro.textContent = '❌ E-mail ou senha inválidos';
-                msgErro.classList.remove('hidden');
-                setTimeout(() => msgErro.classList.add('hidden'), 3000);
+                const msg = document.getElementById('mensagemErro');
+                msg.textContent = '❌ E-mail ou senha inválidos'; msg.classList.remove('hidden');
+                setTimeout(() => msg.classList.add('hidden'), 3000);
                 return;
             }
-
             window.location.href = 'cadastros.html';
         });
-
-        verificarSessao();
+        init();
     </script>
 </body>
 </html>
