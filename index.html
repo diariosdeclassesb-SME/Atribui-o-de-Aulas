@@ -68,10 +68,15 @@
 
             if (portalSession || forceSSO) {
                 document.getElementById('loginScreen').classList.add('hidden');
-                await supabasePortal.auth.signInWithOAuth({
-                    provider: 'supabase',
-                    options: { redirectTo: REDIRECT_URI, queryParams: { client_id: CLIENT_ID, response_type: 'code', scope: 'openid profile email' } }
-                });
+
+                // Redirecionamento manual para o OAuth Server do Supabase
+                const authUrl = new URL('https://zoyiphlxylsxhefmkcwz.supabase.co/auth/v1/oauth/authorize');
+                authUrl.searchParams.set('client_id', CLIENT_ID);
+                authUrl.searchParams.set('redirect_uri', REDIRECT_URI);
+                authUrl.searchParams.set('response_type', 'code');
+                authUrl.searchParams.set('scope', 'openid profile email');
+                window.location.href = authUrl.toString();
+
             } else {
                 document.getElementById('loadingScreen').classList.add('hidden');
                 document.getElementById('loginScreen').classList.remove('hidden');
