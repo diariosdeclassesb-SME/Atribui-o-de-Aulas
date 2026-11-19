@@ -10,21 +10,32 @@
     <script>
         const PORTAL_SUPABASE_URL = 'https://zoyiphlxylsxhefmkcwz.supabase.co';
         const PORTAL_SUPABASE_KEY = 'sb_publishable_bgyHgeKxR7-3ftWx0wYVxg_5k_n7Pzx';
-        const supabasePortal = window.supabase.createClient(PORTAL_SUPABASE_URL, PORTAL_SUPABASE_KEY, { auth: { flowType: 'pkce', detectSessionInUrl: true } });
+        
+        const supabasePortal = window.supabase.createClient(PORTAL_SUPABASE_URL, PORTAL_SUPABASE_KEY, { 
+            auth: { flowType: 'pkce', detectSessionInUrl: true } 
+        });
 
         async function processarCallback() {
             const code = new URLSearchParams(window.location.search).get('code');
-            if (!code) { window.location.href = 'index.html'; return; }
+            
+            if (!code) { 
+                window.location.href = 'index.html'; 
+                return; 
+            }
 
-            const { error } = await supabasePortal.auth.exchangeCodeForSession(code);
+            const { data, error } = await supabasePortal.auth.exchangeCodeForSession(code);
+            
             if (error) {
                 console.error('Erro ao trocar código:', error);
                 alert('Erro ao autenticar. Tente novamente.');
                 window.location.href = 'index.html';
                 return;
             }
+            
+            // Redireciona para a página principal do Atribuição
             window.location.href = 'cadastros.html'; 
         }
+        
         processarCallback();
     </script>
 </body>
